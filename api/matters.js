@@ -8,6 +8,7 @@ import {
   findOrCreateClient, getMatterFields, upsertMatterField, confirmMatterField,
   assessCompleteness, listTemplates, getMatterTimeline, listUsers, logEvent,
 } from '../lib/store.js';
+import { sql } from '../lib/db.js';
 import { requireContext, ok, bad, readBody } from '../lib/context.js';
 import { buildFormSchema, fieldMeta } from '../lib/fields.js';
 
