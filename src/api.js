@@ -33,6 +33,7 @@ export const api = {
   teamRevoke: (body) => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'team_revoke', ...body }) }),
 
   listMatters: () => req('/api/matters'),
+  matterForm: () => req('/api/matters?view=form'),
   getMatter: (id, view) => req(`/api/matters?id=${id}${view ? `&view=${view}` : ''}`),
   createMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'create', ...body }) }),
   saveFields: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'fields', ...body }) }),

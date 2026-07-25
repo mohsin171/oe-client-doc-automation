@@ -9,6 +9,7 @@ import {
   assessCompleteness, listTemplates, getMatterTimeline, listUsers, logEvent,
 } from '../lib/store.js';
 import { requireContext, ok, bad, readBody } from '../lib/context.js';
+import { buildFormSchema, fieldMeta } from '../lib/fields.js';
 
 // Fields every matter needs regardless of document type. Template required
 // fields are unioned on top of these when a specific document is generated.
@@ -41,6 +42,24 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { id, view } = req.query || {};
 
+      // The form is built from what the firm's templates declare, not from a
+      // list hard-coded here. Add a template tomorrow and the form follows.
+      if (view === 'form') {
+        const templates = await listTemplates(ctx.firm_id);
+        const users = await listUsers(ctx.firm_id);
+        const clients = await sql`
+          SELECT id, legal_name, email, address, company_no
+          FROM clients WHERE firm_id = ${ctx.firm_id}
+          ORDER BY legal_name LIMIT 200`;
+        return ok(res, {
+          schema: buildFormSchema(templates, CORE_FIELDS),
+          templates: templates.map((t) => ({ id: t.id, name: t.name, doc_type: t.doc_type })),
+          users: users.filter((u) => u.active),
+          clients,
+          me: { id: ctx.user_id, name: ctx.name },
+        });
+      }
+
       if (!id) {
         const matters = await listMatters(ctx.firm_id);
         const users = await listUsers(ctx.firm_id);
@@ -67,18 +86,27 @@ export default async function handler(req, res) {
 
     // ---------------- Create a matter ----------------
     if (req.method === 'POST' && (body.action || 'create') === 'create') {
-      const { clientLegalName, clientEmail, clientAddress, matterType, reference } = body;
+      const values = body.values || {};
+      const clientLegalName = String(values.client_legal_name || body.clientLegalName || '').trim();
+      const matterType = String(values.matter_type || body.matterType || '').trim();
+
       if (!clientLegalName || !matterType) {
         return bad(res, 'Client legal name and matter type are both required');
       }
 
-      const client = await findOrCreateClient(ctx.firm_id, {
-        legalName: clientLegalName,
-        email: clientEmail,
-        address: clientAddress,
-      });
+      const client = body.clientId
+        ? (await sql`SELECT * FROM clients WHERE firm_id = ${ctx.firm_id} AND id = ${Number(body.clientId)} LIMIT 1`)[0]
+        : await findOrCreateClient(ctx.firm_id, {
+            legalName: clientLegalName,
+            email: values.client_email,
+            address: values.client_address,
+            companyNo: values.company_no || values.company_number,
+          });
 
-      const ref = reference || `${new Date().getFullYear()}/${Date.now().toString().slice(-5)}`;
+      if (!client) return bad(res, 'Client not found', 404);
+
+      const ref = String(values.matter_reference || body.reference || '').trim()
+        || `${new Date().getFullYear()}/${Date.now().toString().slice(-5)}`;
 
       const matter = await createMatter(ctx.firm_id, {
         clientId: client.id,
@@ -87,24 +115,26 @@ export default async function handler(req, res) {
         assignedUserId: body.assignedUserId || ctx.user_id,
       });
 
-      // Seed the fields we already know from the form half. Note that nothing
-      // is inferred here: every value written came from a person typing it.
-      const seedFields = [
-        { key: 'client_legal_name', value: clientLegalName },
-        { key: 'matter_type', value: matterType },
-        { key: 'fee_earner_name', value: body.assignedName || ctx.name },
-        { key: 'client_address', value: clientAddress },
-        { key: 'client_email', value: clientEmail },
-      ];
-      for (const f of seedFields) {
+      // Everything the person typed, with provenance. Rule one is enforced in
+      // the store: an empty value is not written at all, so a gap stays a gap
+      // rather than becoming a blank that looks answered.
+      for (const [key, value] of Object.entries(values)) {
+        const meta = fieldMeta(key);
         await upsertMatterField(matter.id, {
-          key: f.key,
-          value: f.value,
+          key,
+          value,
           source: 'form',
           provenance: 'Entered on the matter opening form',
           confidence: 1,
-          isNumeric: false,
+          isNumeric: meta.numeric || looksNumeric(key, value),
         });
+        // A figure a person typed on this form is confirmed by that act. A
+        // figure arriving from dictation later will not be.
+        if (meta.numeric || looksNumeric(key, value)) {
+          if (String(value ?? '').trim() !== '') {
+            await confirmMatterField(matter.id, key, ctx.user_id);
+          }
+        }
       }
 
       await logEvent({

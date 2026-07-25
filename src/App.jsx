@@ -7,6 +7,7 @@ import Review from './views/Review.jsx';
 import Templates from './views/Templates.jsx';
 import Team from './views/Team.jsx';
 import FirmMark from './views/FirmMark.jsx';
+import NewMatter from './views/NewMatter.jsx';
 
 const STATUS_LABEL = {
   incomplete: 'Needs data',
@@ -20,7 +21,6 @@ export default function App() {
   const [tab, setTab] = useState('queue');
   const [matterId, setMatterId] = useState(null);
   const [documentId, setDocumentId] = useState(null);
-  const [showNew, setShowNew] = useState(false);
   const [matters, setMatters] = useState([]);
 
   const loadSession = useCallback(() => {
@@ -81,7 +81,14 @@ export default function App() {
   }, { review: 0 });
 
   let view;
-  if (documentId) {
+  if (tab === 'new') {
+    view = (
+      <NewMatter
+        onClose={() => { setTab('queue'); loadMatters(); }}
+        onCreated={(id) => { setTab('queue'); loadMatters(); openMatter(id); }}
+      />
+    );
+  } else if (documentId) {
     view = <Review documentId={documentId} onBack={() => { setDocumentId(null); loadMatters(); }} />;
   } else if (matterId) {
     view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={setDocumentId} />;
@@ -94,7 +101,7 @@ export default function App() {
       <Queue
         matters={matters}
         onOpenMatter={openMatter}
-        onNewMatter={() => setShowNew(true)}
+        onNewMatter={() => { setMatterId(null); setDocumentId(null); setTab('new'); }}
       />
     );
   }
@@ -168,6 +175,7 @@ export default function App() {
             >
               Queue
             </button>
+            {tab === 'new' && <button className="tab active">New matter</button>}
             <button
               className={onQueue && tab === 'templates' ? 'tab active' : 'tab'}
               onClick={() => { backToQueue(); setTab('templates'); }}
@@ -200,76 +208,6 @@ export default function App() {
         </main>
       </div>
 
-      {showNew && (
-        <NewMatter
-          onClose={() => setShowNew(false)}
-          onCreated={(id) => { setShowNew(false); loadMatters(); openMatter(id); }}
-        />
-      )}
-    </div>
-  );
-}
-
-function NewMatter({ onClose, onCreated }) {
-  const [form, setForm] = useState({
-    clientLegalName: '', clientEmail: '', clientAddress: '', matterType: '', reference: '',
-  });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-
-  async function create() {
-    setBusy(true); setError(null);
-    try {
-      const d = await api.createMatter(form);
-      onCreated(d.matter.id);
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
-
-  return (
-    <div className="modal-scrim" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Open a matter</h2>
-        <p className="muted">
-          Hard facts go in the form, because they have to be exactly right.
-          Scope and context follow, and can be dictated once that is built.
-        </p>
-
-        <label className="field">
-          <span>Client legal name</span>
-          <input value={form.clientLegalName} onChange={set('clientLegalName')} />
-        </label>
-        <label className="field">
-          <span>Matter type</span>
-          <input value={form.matterType} onChange={set('matterType')} placeholder="conveyancing, probate, commercial" />
-        </label>
-        <label className="field">
-          <span>Client email</span>
-          <input value={form.clientEmail} onChange={set('clientEmail')} />
-        </label>
-        <label className="field">
-          <span>Client address</span>
-          <input value={form.clientAddress} onChange={set('clientAddress')} />
-        </label>
-        <label className="field">
-          <span>Reference</span>
-          <input value={form.reference} onChange={set('reference')} placeholder="generated if left blank" />
-        </label>
-
-        {error && <div className="notice err">{error}</div>}
-
-        <div className="btn-row">
-          <button
-            className="btn-primary"
-            disabled={busy || !form.clientLegalName || !form.matterType}
-            onClick={create}
-          >
-            {busy ? 'Opening…' : 'Open matter'}
-          </button>
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
-        </div>
-      </div>
     </div>
   );
 }
