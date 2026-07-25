@@ -1,0 +1,124 @@
+:root {
+  --navy: #060B14;
+  --azure: #3875AE;
+  --bright: #4592DC;
+  --light: #E9F1F8;
+  --ink: #1A1F28;
+  --muted: #5A6572;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--navy);
+  color: var(--light);
+  font-family: 'Nunito Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 80px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bright);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+h1 {
+  font-family: 'Quicksand', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+.sub { color: var(--muted); margin: 0 0 40px; font-size: 15px; }
+
+.card {
+  background: rgba(233, 241, 248, 0.04);
+  border: 1px solid rgba(69, 146, 220, 0.24);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+h2 {
+  font-family: 'Quicksand', system-ui, sans-serif;
+  font-size: 18px;
+  margin: 0;
+}
+
+.pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.pill-ok { background: rgba(69, 146, 220, 0.2); color: var(--bright); }
+.pill-wait { background: rgba(233, 241, 248, 0.08); color: var(--muted); }
+
+.checks { list-style: none; margin: 0; padding: 0; }
+
+.checks li {
+  display: flex;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(233, 241, 248, 0.07);
+  font-size: 15px;
+}
+.checks li:last-child { border-bottom: none; }
+
+.mark {
+  width: 18px;
+  text-align: center;
+  font-weight: 700;
+  flex: 0 0 18px;
+}
+.checks li.ok .mark { color: var(--bright); }
+.checks li.pending .mark { color: var(--muted); }
+.checks li.pending strong { color: var(--muted); font-weight: 400; }
+
+.hint {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.muted { color: var(--muted); font-size: 14px; }
+.err { color: #E9A0A0; font-size: 14px; }
+
+.ready {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  background: rgba(69, 146, 220, 0.12);
+  border-left: 3px solid var(--bright);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(233, 241, 248, 0.08);
+}
+footer p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0; }
+
+@media (max-width: 560px) {
+  .wrap { padding: 40px 18px 60px; }
+  h1 { font-size: 27px; }
+}
