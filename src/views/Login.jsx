@@ -1,145 +1,151 @@
 import React, { useState } from 'react';
 import { api } from '../api.js';
 
-// Two steps: address, then code. No password to remember, and no way to create
-// an account. Access exists only because the firm owner granted it.
+// Invite only: enter your address, receive a one time code, enter the code.
+// Structure mirrors the unified operations app, rendered light rather than dark.
 
 export default function Login({ onSignedIn, status }) {
   const [step, setStep] = useState('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-  const [notice, setNotice] = useState(null);
-  const [devCode, setDevCode] = useState(null);
+  const [err, setErr] = useState('');
+  const [note, setNote] = useState('');
+  const [devCode, setDevCode] = useState('');
 
   async function requestCode() {
+    setErr(''); setNote(''); setDevCode('');
+    const e = email.trim().toLowerCase();
+    if (!e.includes('@')) { setErr('Please enter a valid email address.'); return; }
     setBusy(true);
-    setError(null);
-    setDevCode(null);
     try {
-      const d = await api.requestCode({ email });
+      const r = await api.requestCode({ email: e });
       setStep('code');
-      setNotice(
-        d.emailDelivered === false
+      setNote(
+        r.emailDelivered === false
           ? 'Email is not connected yet, so the code was written to the server log instead.'
-          : `A ${'six digit'} code is on its way. It expires in ${d.expiresInMinutes} minutes.`
+          : `If that address is authorised, a six digit code is on its way. It expires in ${r.expiresInMinutes} minutes.`
       );
-      if (d.devCode) setDevCode(d.devCode);
-    } catch (e) {
-      setError(e.message);
-    }
+      if (r.devCode) setDevCode(r.devCode);
+    } catch (e2) { setErr(e2.message); }
     setBusy(false);
   }
 
   async function verify() {
+    setErr('');
+    if (!/^\d{6}$/.test(code.trim())) { setErr('Enter the six digit code from your email.'); return; }
     setBusy(true);
-    setError(null);
     try {
-      const d = await api.verifyCode({ email, code });
-      onSignedIn(d);
-    } catch (e) {
-      setError(e.message);
-    }
+      await api.verifyCode({ email: email.trim().toLowerCase(), code: code.trim() });
+      onSignedIn();
+    } catch (e2) { setErr(e2.message); }
     setBusy(false);
   }
 
   return (
-    <div className="login-page">
+    <div className="login-wrap">
       {/* Decorative only. */}
-      <div className="orbs" aria-hidden="true">
-        <span className="orb orb-1" />
-        <span className="orb orb-2" />
-        <span className="orb orb-3" />
-        <span className="orb orb-ring" />
-        <span className="orb orb-ring-2" />
+      <div aria-hidden="true">
+        <div className="login-bg-glow g1" />
+        <div className="login-bg-glow g2" />
+        <div className="login-bg-glow g3" />
+        <span className="login-ring lr1" />
+        <span className="login-ring lr2" />
+        <span className="login-ring lr3" />
+        <div className="login-orb o1" />
+        <div className="login-orb o2" />
+        <div className="login-orb o3" />
       </div>
 
-      <div className="login-stack">
       <div className="login-card">
-        <p className="eyebrow">Orca Edge</p>
-        <h1 className="app-title">Document Generation<br />&amp; Review Automation</h1>
-        <p className="muted small login-sub">
-          Sign in with your work email address. Access is granted by your firm,
-          so there is nothing to register.
-        </p>
+        <div className="login-brand">
+          <div className="login-mark"><span /></div>
+          <div>
+            <div className="login-firm">Orca Edge</div>
+            <div className="login-sub">Document Generation &amp; Review Automation</div>
+          </div>
+        </div>
 
         {status && !status.authConfigured && (
-          <div className="banner">
-            Sign-in is unavailable because SESSION_SECRET is not set. Add it in
-            the Vercel project environment variables and redeploy.
+          <div className="login-err">
+            Sign-in is unavailable because SESSION_SECRET is not set. Add it in the
+            Vercel project environment variables and redeploy.
           </div>
         )}
 
-        {step === 'email' && (
-          <>
-            <label className="gap-input">
-              <span>Work email address</span>
+        <div className="login-step" key={step}>
+          {step === 'email' ? (
+            <>
+              <h1>Sign in</h1>
+              <p className="login-lead">
+                Enter your work email and we will send you a one time code. Access is
+                granted by your firm, so there is nothing to register.
+              </p>
+              <label className="login-label" htmlFor="oe-email">Work email</label>
               <input
+                id="oe-email"
+                className="login-input"
                 type="email"
                 autoComplete="email"
+                autoFocus
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && email.includes('@') && requestCode()}
                 placeholder="you@yourfirm.co.uk"
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && requestCode()}
               />
-            </label>
-            <button
-              className="btn-primary full"
-              disabled={busy || !email.includes('@') || (status && !status.authConfigured)}
-              onClick={requestCode}
-            >
-              {busy ? 'Sending…' : 'Send me a code'}
-            </button>
-          </>
-        )}
-
-        {step === 'code' && (
-          <>
-            {notice && <p className="small notice">{notice}</p>}
-
-            {devCode && (
-              <div className="banner">
-                Pre-launch mode is on, so the code is shown here: <strong>{devCode}</strong>.
-                Turn AUTH_DEV_ECHO off before any real firm uses this.
-              </div>
-            )}
-
-            <label className="gap-input">
-              <span>Six digit code</span>
+              {err && <div className="login-err">{err}</div>}
+              <button
+                className="login-btn"
+                disabled={busy || (status && !status.authConfigured)}
+                onClick={requestCode}
+              >
+                {busy ? 'Sending…' : 'Send code'}
+              </button>
+            </>
+          ) : (
+            <>
+              <h1>Enter your code</h1>
+              <p className="login-lead">
+                We sent a six digit code to <b>{email}</b>. It expires in ten minutes
+                and can only be used once.
+              </p>
+              <label className="login-label" htmlFor="oe-code">Six digit code</label>
               <input
+                id="oe-code"
+                className="login-input login-code"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
-                className="code-input"
+                autoFocus
                 value={code}
+                placeholder="••••••"
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                onKeyDown={(e) => e.key === 'Enter' && code.length === 6 && verify()}
-                placeholder="000000"
+                onKeyDown={(e) => e.key === 'Enter' && verify()}
               />
-            </label>
+              {devCode && (
+                <div className="login-note">
+                  Pre-launch mode, no email connected: your code is <b>{devCode}</b>
+                </div>
+              )}
+              {note && !devCode && <div className="login-note">{note}</div>}
+              {err && <div className="login-err">{err}</div>}
+              <button className="login-btn" disabled={busy} onClick={verify}>
+                {busy ? 'Verifying…' : 'Verify and sign in'}
+              </button>
+              <button
+                className="login-link"
+                disabled={busy}
+                onClick={() => { setStep('email'); setCode(''); setErr(''); setNote(''); setDevCode(''); }}
+              >
+                Use a different email
+              </button>
+            </>
+          )}
+        </div>
 
-            <button className="btn-primary full" disabled={busy || code.length !== 6} onClick={verify}>
-              {busy ? 'Checking…' : 'Sign in'}
-            </button>
-
-            <button
-              className="link-back"
-              style={{ marginTop: 14 }}
-              onClick={() => { setStep('email'); setCode(''); setError(null); setNotice(null); }}
-            >
-              Use a different address
-            </button>
-          </>
-        )}
-
-        {error && <p className="err">{error}</p>}
-      </div>
-
-      <p className="login-foot">
-        The AI never fills a gap, and the AI never touches fixed clauses.
-        A qualified person signs off on everything before it leaves the firm.
-      </p>
+        <div className="login-foot">
+          Protected by one time codes and encrypted sessions. Secured over HTTPS.
+        </div>
       </div>
     </div>
   );
