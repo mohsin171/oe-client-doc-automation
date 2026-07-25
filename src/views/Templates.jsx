@@ -1,104 +1,214 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 
-// Bring your own template: paste a letter the firm has actually issued and
-// watch it become a working template. This is the two minute proof.
+// Upload the firm's own documents. Not one, a pile.
+//
+// A single letter tells you nothing about which parts are standard and which
+// happened to suit that client. Twenty tells you exactly: the wording that
+// appears in every one of them is, by definition, the firm's standard terms.
+// Nobody marks anything up. The protected clauses are found by counting.
+
+const ACCEPT = '.txt,.md,.docx,.doc';
+
+async function readFile(file) {
+  const name = file.name;
+  if (/\.docx?$/i.test(name)) {
+    const mammoth = await import('mammoth/mammoth.browser.js');
+    const buf = await file.arrayBuffer();
+    const { value } = await mammoth.extractRawText({ arrayBuffer: buf });
+    return { name, text: value };
+  }
+  return { name, text: await file.text() };
+}
 
 export default function Templates() {
   const [templates, setTemplates] = useState([]);
-  const [text, setText] = useState('');
+  const [corpus, setCorpus] = useState([]);
+  const [docs, setDocs] = useState([]);
   const [hint, setHint] = useState('');
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef(null);
 
   async function load() {
-    try { setTemplates((await api.listTemplates()).templates || []); }
-    catch (e) { setError(e.message); }
+    try {
+      const d = await api.listTemplates();
+      setTemplates(d.templates || []);
+      setCorpus(d.corpus || []);
+    } catch (e) { setError(e.message); }
   }
   useEffect(() => { load(); }, []);
 
+  async function addFiles(fileList) {
+    setError(null);
+    const incoming = [...fileList];
+    const read = [];
+    for (const f of incoming) {
+      try {
+        const r = await readFile(f);
+        if (r.text.trim().length < 120) {
+          setError(`${f.name} looks too short to be a full document.`);
+          continue;
+        }
+        read.push(r);
+      } catch (_) {
+        setError(`Could not read ${f.name}. Plain text or Word files work best.`);
+      }
+    }
+    setDocs((d) => {
+      const names = new Set(d.map((x) => x.name));
+      return [...d, ...read.filter((r) => !names.has(r.name))];
+    });
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+  }
+
   async function analyse() {
     setBusy('analyse'); setError(null); setResult(null);
-    try { setResult(await api.analyseTemplate({ documentText: text, hint })); }
-    catch (e) { setError(e.message); }
+    try {
+      setResult(await api.analyseTemplate({ documents: docs, hint }));
+    } catch (e) { setError(e.message); }
     setBusy(null);
   }
 
   async function save() {
     setBusy('save');
     try {
-      await api.saveTemplate({ definition: result.definition, name: result.definition.name });
-      setResult(null); setText(''); setHint('');
+      await api.saveTemplate({
+        definition: result.definition,
+        name: result.definition.name,
+        documents: docs,
+      });
+      setResult(null); setDocs([]); setHint('');
       await load();
     } catch (e) { setError(e.message); }
     setBusy(null);
   }
+
+  const totalOnFile = corpus.reduce((n, c) => n + c.n, 0);
 
   return (
     <>
       <div className="section">
         <div className="section-head">
           <div>
-            <div className="section-title">Templates</div>
+            <div className="section-title">Your documents</div>
             <div className="section-hint">
-              Paste a document the firm has actually issued. The engine separates
-              the standard wording from the parts that change, and proposes the
-              checks to run on every future copy.
+              Upload documents you have already sent to clients. The more you add,
+              the better this works: wording that appears in all of them is your
+              standard terms, and the rest is what gets written fresh each time.
             </div>
           </div>
+          {totalOnFile > 0 && <span className="count">{totalOnFile} on file</span>}
         </div>
 
-        <div className="panel-box">
-          <label className="field">
-            <span>What is this document</span>
-            <input
-              placeholder="engagement letter, client care letter, closing letter"
-              value={hint}
-              onChange={(e) => setHint(e.target.value)}
-            />
-          </label>
-
-          <label className="field">
-            <span>The full text</span>
-            <textarea
-              className="tall"
-              placeholder="Paste the whole document here."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-          </label>
-
-          <button className="btn-primary" disabled={busy === 'analyse' || text.length < 120} onClick={analyse}>
-            {busy === 'analyse' ? 'Reading the document…' : 'Analyse this document'}
-          </button>
-
-          {error && <div className="notice err" style={{ marginTop: 14 }}>{error}</div>}
+        <div
+          className={dragging ? 'dropzone dragging' : 'dropzone'}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept={ACCEPT}
+            hidden
+            onChange={(e) => addFiles(e.target.files)}
+          />
+          <div className="dz-icon">↑</div>
+          <strong>Drop your documents here</strong>
+          <span className="prov">
+            Word or plain text, as many as you like. Redacted copies are fine:
+            names are not what this reads.
+          </span>
         </div>
+
+        {docs.length > 0 && (
+          <div className="panel-box" style={{ marginTop: 16 }}>
+            <div className="box-head">
+              <span className="box-title">{docs.length} ready to analyse</span>
+              <button className="btn-ghost" onClick={() => setDocs([])}>Clear</button>
+            </div>
+            <div className="filelist">
+              {docs.map((d) => (
+                <div className="filerow" key={d.name}>
+                  <span className="fname">{d.name}</span>
+                  <span className="fsize">{Math.round(d.text.length / 1000)}k characters</span>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => setDocs(docs.filter((x) => x.name !== d.name))}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <label className="field" style={{ marginTop: 16 }}>
+              <span>What are these</span>
+              <input
+                placeholder="engagement letters, client care letters, closing letters"
+                value={hint}
+                onChange={(e) => setHint(e.target.value)}
+              />
+            </label>
+
+            {docs.length === 1 && (
+              <div className="notice warn">
+                One document only tells us so much. With a single letter there is no
+                way to know which parts are your standard wording and which just
+                suited that client. Add a few more for a much better result.
+              </div>
+            )}
+
+            <button className="btn-primary" disabled={busy === 'analyse'} onClick={analyse}>
+              {busy === 'analyse'
+                ? `Reading ${docs.length} document${docs.length > 1 ? 's' : ''}…`
+                : `Analyse ${docs.length} document${docs.length > 1 ? 's' : ''}`}
+            </button>
+          </div>
+        )}
+
+        {error && <div className="notice err">{error}</div>}
       </div>
 
       {result && (
         <div className="section">
           <div className="section-head">
             <div className="section-title">{result.definition.name}</div>
-            <div className="section-hint">Review the split before saving</div>
+            <div className="section-hint">Check the split before saving</div>
           </div>
 
           <div className="stats">
-            <div className="stat">
+            <div className="stat hero">
               <div className="stat-value">{result.summary.fixed}</div>
               <div className="stat-label">Standard clauses</div>
-              <div className="stat-note">The AI never touches these</div>
+              <div className="stat-note">
+                {result.corpus?.n > 1
+                  ? `In all ${result.corpus.n} documents. The AI can never alter these`
+                  : 'The AI can never alter these'}
+              </div>
             </div>
             <div className="stat">
               <div className="stat-value">{result.summary.field}</div>
               <div className="stat-label">Merged lines</div>
-              <div className="stat-note">{result.summary.requiredFields} fields needed</div>
+              <div className="stat-note">{result.summary.requiredFields} values needed</div>
             </div>
             <div className="stat">
               <div className="stat-value">{result.summary.bespoke}</div>
-              <div className="stat-label">Drafted per matter</div>
-              <div className="stat-note">Grounded on firm precedents</div>
+              <div className="stat-label">Written each time</div>
+              <div className="stat-note">Grounded on these documents</div>
             </div>
             <div className="stat">
               <div className="stat-value">{result.summary.blocking}</div>
@@ -107,6 +217,15 @@ export default function Templates() {
             </div>
           </div>
 
+          {result.corpus?.rejected > 0 && (
+            <div className="notice info">
+              {result.corpus.rejected} proposed clause
+              {result.corpus.rejected > 1 ? 's were' : ' was'} rejected for not matching
+              your wording exactly. A paraphrased standard clause is the one thing this
+              is built to prevent.
+            </div>
+          )}
+
           <div className="panel-box" style={{ marginTop: 16 }}>
             <div className="box-title">The split</div>
             <div className="blocks-preview">
@@ -114,8 +233,8 @@ export default function Templates() {
                 <div key={b.key} className={`block block-${b.kind}`}>
                   <span className="block-kind">
                     {b.kind === 'fixed' && 'Standard · reproduced exactly'}
-                    {b.kind === 'field' && 'Merged · filled from the matter record'}
-                    {b.kind === 'bespoke' && 'Drafted fresh each time'}
+                    {b.kind === 'field' && 'Merged · filled from the client record'}
+                    {b.kind === 'bespoke' && 'Written fresh each time'}
                   </span>
                   <p className="block-body">{b.kind === 'bespoke' ? b.prompt : b.body}</p>
                 </div>
@@ -135,7 +254,7 @@ export default function Templates() {
             )}
 
             <button className="btn-primary" style={{ marginTop: 20 }} disabled={busy === 'save'} onClick={save}>
-              {busy === 'save' ? 'Saving…' : 'Save as a template'}
+              {busy === 'save' ? 'Saving…' : `Save and keep all ${docs.length} documents`}
             </button>
           </div>
         </div>
@@ -143,28 +262,32 @@ export default function Templates() {
 
       <div className="section">
         <div className="section-head">
-          <div className="section-title">Saved templates</div>
-          <div className="section-hint">Configuration the engine reads, never code</div>
+          <div className="section-title">What we have learned</div>
+          <div className="section-hint">Structures derived from your documents</div>
         </div>
 
         {templates.length === 0 ? (
-          <div className="panel-box"><p className="box-empty">None yet.</p></div>
+          <div className="panel-box"><p className="box-empty">Nothing yet.</p></div>
         ) : (
           <div className="rows">
-            {templates.map((t) => (
-              <div key={t.id} className="row">
-                <div className="row-main">
-                  <strong>{t.name}</strong>
-                  <span className="row-sub">
-                    {t.summary.fixed} standard · {t.summary.field} merged ·{' '}
-                    {t.summary.bespoke} drafted · {t.summary.requiredFields} fields
-                  </span>
+            {templates.map((t) => {
+              const c = corpus.find((x) => x.doc_type === t.doc_type);
+              return (
+                <div key={t.id} className="row">
+                  <div className="row-main">
+                    <strong>{t.name}</strong>
+                    <span className="row-sub">
+                      {t.summary.fixed} standard · {t.summary.field} merged ·{' '}
+                      {t.summary.bespoke} written each time · {t.summary.requiredFields} values
+                    </span>
+                  </div>
+                  <div className="row-side">
+                    {c && <span className="chip">{c.n} on file</span>}
+                    <span className="chip">{t.summary.blocking} blocking</span>
+                  </div>
                 </div>
-                <div className="row-side">
-                  <span className="chip">{t.summary.blocking} blocking</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

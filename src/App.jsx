@@ -137,7 +137,7 @@ export default function App() {
               className={onQueue && tab === 'templates' ? 'side-item-btn active' : 'side-item-btn'}
               onClick={() => { backToQueue(); setTab('templates'); }}
             >
-              <span className="side-item-label">Templates</span>
+              <span className="side-item-label">Your documents</span>
             </button>
             {isOwner && (
               <button
@@ -191,7 +191,7 @@ export default function App() {
               className={onQueue && tab === 'templates' ? 'tab active' : 'tab'}
               onClick={() => { backToQueue(); setTab('templates'); }}
             >
-              Templates
+              Your documents
             </button>
             {isOwner && (
               <button
