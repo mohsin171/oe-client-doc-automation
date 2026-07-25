@@ -105,9 +105,6 @@ select:focus-visible, a:focus-visible { outline: 2px solid var(--bright); outlin
 .tab.active { color: var(--bright); background: var(--light); }
 
 .who { display: flex; align-items: center; gap: 12px; }
-.who-block { text-align: right; line-height: 1.25; }
-.who-name { font-size: 0.85rem; font-weight: 700; color: var(--ink); }
-.who-role { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); font-weight: 800; }
 
 .main { flex: 1; padding: 34px; max-width: 1400px; width: 100%; margin: 0 auto; }
 

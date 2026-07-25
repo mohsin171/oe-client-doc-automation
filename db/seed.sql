@@ -15,20 +15,12 @@ ON CONFLICT (slug) DO NOTHING;
 
 -- Owner account
 INSERT INTO users (firm_id, email, name, role, charge_rate)
-SELECT id, 'mohsinali.05961@gmail.com', 'Mohsin Ali', 'owner', 280.00
+SELECT id, 'mohsinali.05961@gmail.com', 'Mohsin Ali', 'owner', NULL
 FROM firms WHERE slug = 'harrow-fenn'
 ON CONFLICT (firm_id, email) DO NOTHING;
 
--- Demo fee earners for the illustrative firm
-INSERT INTO users (firm_id, email, name, role, charge_rate)
-SELECT id, 'sarah.fenn@harrowfenn.example', 'Sarah Fenn', 'approver', 320.00
-FROM firms WHERE slug = 'harrow-fenn'
-ON CONFLICT (firm_id, email) DO NOTHING;
-
-INSERT INTO users (firm_id, email, name, role, charge_rate)
-SELECT id, 'dan.okoye@harrowfenn.example', 'Dan Okoye', 'drafter', 165.00
-FROM firms WHERE slug = 'harrow-fenn'
-ON CONFLICT (firm_id, email) DO NOTHING;
+-- No other people are seeded. The owner invites their own team from the
+-- Team screen, which is also how a real firm would be onboarded.
 
 -- Starter template: engagement letter.
 -- blocks are ordered. kind is fixed | field | bespoke.

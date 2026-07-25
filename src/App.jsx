@@ -79,7 +79,6 @@ export default function App() {
     view = (
       <Queue
         matters={matters}
-        me={session.user}
         onOpenMatter={openMatter}
         onNewMatter={() => setShowNew(true)}
       />
@@ -172,10 +171,6 @@ export default function App() {
           </nav>
 
           <div className="who">
-            <div className="who-block">
-              <div className="who-name">{session.user.name}</div>
-              <div className="who-role">{session.user.role}</div>
-            </div>
             <button className="btn btn-sm" onClick={signOut}>Sign out</button>
           </div>
         </header>

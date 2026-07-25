@@ -175,7 +175,7 @@ export default function Review({ documentId, onBack }) {
                 )}
               </>
             ) : (
-              <p className="muted">Your role cannot sign off. Route this to an approver.</p>
+              <p className="muted">Your role cannot sign off. Ask the firm owner.</p>
             )}
 
             {doc.status === 'approved' && (

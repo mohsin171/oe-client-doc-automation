@@ -10,7 +10,7 @@ const STATUS_LABEL = {
   closed: 'Closed',
 };
 
-export default function Queue({ matters = [], me, onOpenMatter, onNewMatter }) {
+export default function Queue({ matters = [], onOpenMatter, onNewMatter }) {
   const needsData = matters.filter((m) => m.status === 'incomplete').length;
   const awaitingReview = matters.reduce((n, m) => n + (m.pending_documents || 0), 0);
   const live = matters.filter((m) => m.status !== 'closed').length;
@@ -37,9 +37,7 @@ export default function Queue({ matters = [], me, onOpenMatter, onNewMatter }) {
         <div className="section-head">
           <div>
             <div className="section-title">Your queue</div>
-            <div className="section-hint">
-              {me ? `${me.name}, ` : ''}here is what is waiting on you.
-            </div>
+            <div className="section-hint">What is waiting on a person right now</div>
           </div>
           <button className="btn-primary" onClick={onNewMatter}>New matter</button>
         </div>

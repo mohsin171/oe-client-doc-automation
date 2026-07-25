@@ -155,8 +155,7 @@ export default async function handler(req, res) {
       const team = await sql`
         SELECT id, name, email, role, active, last_login_at, created_at
         FROM users WHERE firm_id = ${ctx.firm_id}
-        ORDER BY active DESC,
-          CASE role WHEN 'owner' THEN 0 WHEN 'approver' THEN 1 ELSE 2 END, name`;
+        ORDER BY active DESC, CASE role WHEN 'owner' THEN 0 ELSE 1 END, name`;
       return ok(res, { team, canManage: canManageTeam(ctx.role), me: ctx.user_id });
     }
 
@@ -167,7 +166,7 @@ export default async function handler(req, res) {
     if (action === 'team_invite') {
       const email = String(body.email || '').trim().toLowerCase();
       const name = String(body.name || '').trim();
-      const role = ROLES.includes(body.role) ? body.role : 'drafter';
+      const role = ROLES.includes(body.role) ? body.role : 'admin';
 
       if (!email.includes('@') || !name) return bad(res, 'Name and email are both required');
       if (role === 'owner') return bad(res, 'There can only be one owner');

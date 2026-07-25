@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
 const ROLE_NOTE = {
-  approver: 'Can draft and can sign off documents.',
-  drafter: 'Can draft and prepare. Cannot sign off.',
+  admin: 'Full access to matters, documents and sign-off.',
+  owner: 'Everything an admin can do, plus managing who has access.',
 };
 
 export default function Team() {
   const [state, setState] = useState({ loading: true, team: [] });
-  const [invite, setInvite] = useState({ name: '', email: '', role: 'drafter' });
+  const [invite, setInvite] = useState({ name: '', email: '', role: 'admin' });
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(null);
@@ -38,8 +38,9 @@ export default function Team() {
           <div>
             <div className="section-title">Team</div>
             <div className="section-hint">
-              Access is invite only. Sign-off authority is enforced by the system,
-              not by convention, so a drafter cannot approve a document even if they try.
+              People who can sign in. Access is by invitation only, and each person
+              signs in with a one time code sent to their email. Nobody can register
+              themselves.
             </div>
           </div>
         </div>
@@ -61,8 +62,7 @@ export default function Team() {
               <label className="field">
                 <span>Role</span>
                 <select value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
-                  <option value="drafter">Drafter</option>
-                  <option value="approver">Approver</option>
+                  <option value="admin">Admin</option>
                 </select>
               </label>
             </div>
@@ -73,7 +73,7 @@ export default function Team() {
               disabled={busy === 'invite' || !invite.name || !invite.email.includes('@')}
               onClick={() => run('invite', async () => {
                 const d = await api.teamInvite(invite);
-                setInvite({ name: '', email: '', role: 'drafter' });
+                setInvite({ name: '', email: '', role: 'admin' });
                 return d;
               })}
             >
@@ -105,19 +105,7 @@ export default function Team() {
               <div className="row-side">
                 {!u.active && <span className="badge revoked">revoked</span>}
 
-                {u.active && canManage && u.role !== 'owner' && u.id !== me ? (
-                  <select
-                    value={u.role}
-                    disabled={busy === u.id}
-                    style={{ width: 'auto' }}
-                    onChange={(e) => run(u.id, () => api.teamRole({ userId: u.id, role: e.target.value }))}
-                  >
-                    <option value="drafter">Drafter</option>
-                    <option value="approver">Approver</option>
-                  </select>
-                ) : (
-                  <span className={`badge ${u.role}`}>{u.role}</span>
-                )}
+                <span className={`badge ${u.role}`}>{u.role}</span>
 
                 {u.active && canManage && u.role !== 'owner' && u.id !== me && (
                   confirming === u.id ? (

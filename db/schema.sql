@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
   firm_id       INTEGER NOT NULL REFERENCES firms(id) ON DELETE CASCADE,
   email         TEXT NOT NULL,
   name          TEXT NOT NULL,
-  role          TEXT NOT NULL DEFAULT 'drafter',    -- owner | approver | drafter
+  role          TEXT NOT NULL DEFAULT 'admin',      -- owner | admin
   charge_rate   NUMERIC(10,2),                      -- for the value report
   active        BOOLEAN NOT NULL DEFAULT TRUE,
   invited_by    INTEGER REFERENCES users(id),
