@@ -64,6 +64,7 @@ export default function NewMatter({ onClose, onCreated }) {
       ...v,
       client_legal_name: c.legal_name,
       client_email: c.email || v.client_email || '',
+      client_phone: c.phone || v.client_phone || '',
       client_address: c.address || v.client_address || '',
     }));
   }

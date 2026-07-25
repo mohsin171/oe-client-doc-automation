@@ -13,9 +13,20 @@ import { requireContext, ok, bad, readBody } from '../lib/context.js';
 import { buildFormSchema, splitSchema, fieldMeta } from '../lib/fields.js';
 import { extractFromNarrative } from '../lib/extract.js';
 
-// Fields every matter needs regardless of document type. Template required
-// fields are unioned on top of these when a specific document is generated.
-const CORE_FIELDS = ['client_legal_name', 'matter_type', 'fee_earner_name'];
+// A file needs some things no document ever prints. An email address is how
+// anything reaches the client at all, so it cannot depend on whether a template
+// happens to mention it. Template fields are unioned on top of these.
+const CORE_FIELDS = [
+  'client_legal_name',
+  'client_email',
+  'client_phone',
+  'client_address',
+  'matter_type',
+  'fee_earner_name',
+];
+
+// Of those, only these two are genuinely required to open a file.
+const REQUIRED_TO_OPEN = ['client_legal_name', 'matter_type'];
 
 // Anything that looks like money, a rate, or a count is treated as numeric and
 // always requires explicit confirmation. Dictation mishears figures, and sixty
@@ -27,7 +38,7 @@ function looksNumeric(key, value) {
 
 async function requiredFor(firmId, matter) {
   const templates = await listTemplates(firmId);
-  const set = new Set(CORE_FIELDS);
+  const set = new Set(REQUIRED_TO_OPEN);
   for (const t of templates) {
     if (matter && t.doc_type && matter.matter_type && t.doc_type !== matter.matter_type) continue;
     for (const f of (t.definition?.requiredFields || [])) set.add(f);
@@ -50,7 +61,7 @@ export default async function handler(req, res) {
         const templates = await listTemplates(ctx.firm_id);
         const users = await listUsers(ctx.firm_id);
         const clients = await sql`
-          SELECT id, legal_name, email, address, company_no
+          SELECT id, legal_name, email, phone, address, company_no
           FROM clients WHERE firm_id = ${ctx.firm_id}
           ORDER BY legal_name LIMIT 200`;
         const schema = buildFormSchema(templates, CORE_FIELDS);
@@ -105,11 +116,23 @@ export default async function handler(req, res) {
         : await findOrCreateClient(ctx.firm_id, {
             legalName: clientLegalName,
             email: values.client_email,
+            phone: values.client_phone,
             address: values.client_address,
             companyNo: values.company_no || values.company_number,
           });
 
       if (!client) return bad(res, 'Client not found', 404);
+
+      // Contact details change. If this file carries newer ones, keep them,
+      // but never overwrite something with nothing.
+      if (body.clientId) {
+        await sql`
+          UPDATE clients SET
+            email   = COALESCE(NULLIF(${values.client_email || ''}, ''), email),
+            phone   = COALESCE(NULLIF(${values.client_phone || ''}, ''), phone),
+            address = COALESCE(NULLIF(${values.client_address || ''}, ''), address)
+          WHERE id = ${client.id} AND firm_id = ${ctx.firm_id}`;
+      }
 
       const ref = String(values.matter_reference || body.reference || '').trim()
         || `${new Date().getFullYear()}/${Date.now().toString().slice(-5)}`;
