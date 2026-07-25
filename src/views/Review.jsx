@@ -13,112 +13,56 @@ export default function Review({ documentId, onBack }) {
   const [reason, setReason] = useState('');
 
   async function load() {
-    try {
-      const d = await api.getDocument(documentId);
-      setState({ loading: false, ...d });
-    } catch (e) {
-      setState({ loading: false, error: e.message });
-    }
+    try { setState({ loading: false, ...(await api.getDocument(documentId)) }); }
+    catch (e) { setState({ loading: false, error: e.message }); }
   }
-
   useEffect(() => { load(); }, [documentId]);
 
   if (state.loading) return <p className="muted">Loading…</p>;
-  if (state.error) return <p className="err">{state.error}</p>;
+  if (state.error) return <div className="notice err">{state.error}</div>;
 
   const { document: doc, version, flags = [], approvals = [], me } = state;
   const blocks = version?.blocks || [];
-  const openFlags = flags.filter((f) => f.status === 'open');
-  const blocking = openFlags.filter((f) => f.severity === 'blocking');
-  const isApproved = ['approved', 'issued'].includes(doc.status);
+  const open = flags.filter((f) => f.status === 'open');
+  const blocking = open.filter((f) => f.severity === 'blocking');
+  const locked = ['approved', 'issued'].includes(doc.status);
 
-  async function saveEdit(key) {
-    setBusy('edit');
-    try {
-      await api.editBlock({ documentId, blockKey: key, body: editText });
-      setEditing(null);
-      await load();
-    } catch (e) { setError(e.message); }
+  const run = async (key, fn) => {
+    setBusy(key); setError(null);
+    try { await fn(); await load(); } catch (e) { setError(e.message); }
     setBusy(null);
-  }
-
-  async function resolve(flagId) {
-    setBusy(flagId);
-    try {
-      await api.flag({ documentId, flagId, dismissed: false });
-      await load();
-    } catch (e) { setError(e.message); }
-    setBusy(null);
-  }
-
-  async function dismiss(flagId) {
-    if (!reason.trim()) { setError('A dismissal needs a reason.'); return; }
-    setBusy(flagId);
-    try {
-      await api.flag({ documentId, flagId, dismissed: true, reason });
-      setDismissing(null);
-      setReason('');
-      await load();
-    } catch (e) { setError(e.message); }
-    setBusy(null);
-  }
-
-  async function approve() {
-    setBusy('approve');
-    setError(null);
-    try {
-      await api.approve({ documentId });
-      await load();
-    } catch (e) {
-      if (e.detail?.reason === 'blocking_flags') {
-        setError('There are still blocking flags open. Resolve or dismiss each one first.');
-      } else {
-        setError(e.message);
-      }
-    }
-    setBusy(null);
-  }
-
-  async function issue() {
-    setBusy('issue');
-    try {
-      await api.issue({ documentId });
-      await load();
-    } catch (e) { setError(e.message); }
-    setBusy(null);
-  }
+  };
 
   return (
-    <div>
-      <button className="link-back" onClick={onBack}>Back</button>
+    <>
+      <button className="back" onClick={onBack}>Back</button>
 
-      <div className="row-between">
+      <div className="section-head">
         <div>
-          <h2 className="view-title">{LABEL(doc.doc_type)}</h2>
-          <p className="muted small">
+          <div className="section-title">{LABEL(doc.doc_type)}</div>
+          <div className="section-hint">
             {doc.client_name} · {doc.reference} · version {version?.version}
-          </p>
+          </div>
         </div>
-        <span className={`tag tag-${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
+        <span className={`badge ${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
       </div>
 
-      {error && <p className="err">{error}</p>}
+      {error && <div className="notice err">{error}</div>}
 
       <div className="review-split">
-        {/* Draft */}
-        <div className="draft">
+        <div className="draft-doc">
           {blocks.map((b) => (
             <div key={b.key} className={`block block-${b.kind}`}>
               <div className="block-head">
                 <span className="block-kind">
-                  {b.kind === 'fixed' && 'Standard clause · not editable by AI'}
-                  {b.kind === 'field' && 'Merged from matter record'}
+                  {b.kind === 'fixed' && 'Standard clause · assembled by code'}
+                  {b.kind === 'field' && 'Merged from the matter record'}
                   {b.kind === 'bespoke' && 'AI drafted · check this closely'}
                   {b.editedByHand && ' · edited by hand'}
                 </span>
-                {b.kind !== 'fixed' && !isApproved && (
+                {b.kind !== 'fixed' && !locked && (
                   <button
-                    className="btn-tiny"
+                    className="btn-ghost"
                     onClick={() => { setEditing(b.key); setEditText(b.body || ''); }}
                   >
                     Edit
@@ -127,54 +71,57 @@ export default function Review({ documentId, onBack }) {
               </div>
 
               {editing === b.key ? (
-                <div>
-                  <textarea
-                    className="editor"
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    rows={6}
-                  />
-                  <div className="btn-row">
-                    <button className="btn-small" disabled={busy === 'edit'} onClick={() => saveEdit(b.key)}>
+                <>
+                  <textarea rows={6} value={editText} onChange={(e) => setEditText(e.target.value)} />
+                  <div className="btn-row" style={{ marginTop: 8 }}>
+                    <button
+                      className="btn btn-sm"
+                      disabled={busy === 'edit'}
+                      onClick={() => run('edit', async () => {
+                        await api.editBlock({ documentId, blockKey: b.key, body: editText });
+                        setEditing(null);
+                      })}
+                    >
                       Save
                     </button>
-                    <button className="btn-small ghost" onClick={() => setEditing(null)}>Cancel</button>
+                    <button className="btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
                   </div>
-                </div>
+                </>
               ) : (
-                <p className="block-body">{b.body || <em className="muted">empty</em>}</p>
+                <p className="block-body">{b.body || <span className="faint">empty</span>}</p>
               )}
             </div>
           ))}
         </div>
 
-        {/* Flags */}
-        <div className="flags">
-          <div className="card-head">
-            <h3>Review</h3>
-            <span className={blocking.length ? 'pill pill-warn' : 'pill pill-ok'}>
-              {openFlags.length} open
+        <aside className="flags-panel">
+          <div className="box-head">
+            <span className="box-title">Review</span>
+            <span className={blocking.length ? 'badge blocking' : 'badge approved'}>
+              {open.length} open
             </span>
           </div>
 
-          {flags.length === 0 && <p className="muted small">No flags raised on this version.</p>}
+          {flags.length === 0 && <p className="box-empty">No flags raised on this version.</p>}
 
           {flags.map((f) => (
             <div key={f.id} className={`flag flag-${f.severity} flag-${f.status}`}>
               <div className="flag-head">
-                <span className="flag-sev">{f.severity}</span>
+                <span className={`badge ${f.severity}`}>{f.severity}</span>
                 {f.anchor && <span className="flag-anchor">{f.anchor}</span>}
               </div>
               <p className="flag-msg">{f.message}</p>
 
-              {f.status === 'open' && !isApproved && (
-                <div className="btn-row">
-                  <button className="btn-tiny" disabled={busy === f.id} onClick={() => resolve(f.id)}>
+              {f.status === 'open' && !locked && (
+                <div className="btn-row" style={{ marginTop: 8 }}>
+                  <button
+                    className="btn btn-sm"
+                    disabled={busy === f.id}
+                    onClick={() => run(f.id, () => api.flag({ documentId, flagId: f.id, dismissed: false }))}
+                  >
                     Resolved
                   </button>
-                  <button className="btn-tiny ghost" onClick={() => setDismissing(f.id)}>
-                    Dismiss
-                  </button>
+                  <button className="btn-ghost" onClick={() => setDismissing(f.id)}>Dismiss</button>
                 </div>
               )}
 
@@ -185,65 +132,73 @@ export default function Review({ documentId, onBack }) {
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                   />
-                  <button className="btn-tiny" disabled={busy === f.id} onClick={() => dismiss(f.id)}>
+                  <button
+                    className="btn btn-sm"
+                    disabled={busy === f.id || !reason.trim()}
+                    onClick={() => run(f.id, async () => {
+                      await api.flag({ documentId, flagId: f.id, dismissed: true, reason });
+                      setDismissing(null); setReason('');
+                    })}
+                  >
                     Record
                   </button>
                 </div>
               )}
 
-              {f.status === 'dismissed' && (
-                <p className="hint">Dismissed: {f.dismissed_reason}</p>
-              )}
-              {f.status === 'resolved' && <p className="hint">Resolved</p>}
+              {f.status === 'dismissed' && <div className="prov">Dismissed: {f.dismissed_reason}</div>}
+              {f.status === 'resolved' && <div className="prov">Resolved</div>}
             </div>
           ))}
 
-          {/* Sign-off */}
           <div className="signoff">
             {approvals.length > 0 ? (
-              <div className="approved-note">
+              <div className="signed">
                 <strong>Signed off</strong>
-                <span className="hint">
+                <div className="prov">
                   {approvals[0].approver_name} · {new Date(approvals[0].approved_at).toLocaleString('en-GB')}
-                </span>
+                </div>
               </div>
             ) : me?.canApprove ? (
               <>
                 <button
                   className="btn-primary full"
                   disabled={busy === 'approve' || blocking.length > 0}
-                  onClick={approve}
+                  onClick={() => run('approve', () => api.approve({ documentId }))}
                 >
                   {busy === 'approve' ? 'Recording…' : 'Sign off'}
                 </button>
                 {blocking.length > 0 && (
-                  <p className="hint">
+                  <p className="prov">
                     {blocking.length} blocking flag{blocking.length > 1 ? 's' : ''} must be
                     resolved or dismissed first.
                   </p>
                 )}
               </>
             ) : (
-              <p className="hint">
-                Your role cannot sign off. Route this to an approver.
-              </p>
+              <p className="muted">Your role cannot sign off. Route this to an approver.</p>
             )}
 
             {doc.status === 'approved' && (
-              <div className="btn-row">
-                <a className="btn-secondary" href={api.downloadUrl(documentId)}>Download Word</a>
-                <button className="btn-small" disabled={busy === 'issue'} onClick={issue}>
+              <div className="btn-row" style={{ marginTop: 12 }}>
+                <a className="btn" href={api.downloadUrl(documentId)}>Download Word</a>
+                <button
+                  className="btn btn-sm"
+                  disabled={busy === 'issue'}
+                  onClick={() => run('issue', () => api.issue({ documentId }))}
+                >
                   Mark issued
                 </button>
               </div>
             )}
 
             {doc.status === 'issued' && (
-              <a className="btn-secondary full" href={api.downloadUrl(documentId)}>Download Word</a>
+              <a className="btn full" style={{ marginTop: 12 }} href={api.downloadUrl(documentId)}>
+                Download Word
+              </a>
             )}
           </div>
-        </div>
+        </aside>
       </div>
-    </div>
+    </>
   );
 }

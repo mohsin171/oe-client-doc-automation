@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
 const ROLE_NOTE = {
-  owner: 'Full access. Manages templates and the team.',
   approver: 'Can draft and can sign off documents.',
   drafter: 'Can draft and prepare. Cannot sign off.',
 };
@@ -15,150 +14,136 @@ export default function Team() {
   const [confirming, setConfirming] = useState(null);
 
   async function load() {
-    try {
-      const d = await api.team();
-      setState({ loading: false, ...d });
-    } catch (e) {
-      setState({ loading: false, error: e.message, team: [] });
-    }
+    try { setState({ loading: false, ...(await api.team()) }); }
+    catch (e) { setState({ loading: false, error: e.message, team: [] }); }
   }
-
   useEffect(() => { load(); }, []);
 
-  async function doInvite() {
-    setBusy('invite');
-    setError(null);
-    try {
-      const d = await api.teamInvite(invite);
-      setState((s) => ({ ...s, team: d.team }));
-      setInvite({ name: '', email: '', role: 'drafter' });
-    } catch (e) { setError(e.message); }
+  const run = async (key, fn) => {
+    setBusy(key); setError(null);
+    try { const d = await fn(); if (d?.team) setState((s) => ({ ...s, team: d.team })); }
+    catch (e) { setError(e.message); }
     setBusy(null);
-  }
-
-  async function changeRole(userId, role) {
-    setBusy(userId);
-    setError(null);
-    try {
-      const d = await api.teamRole({ userId, role });
-      setState((s) => ({ ...s, team: d.team }));
-    } catch (e) { setError(e.message); }
-    setBusy(null);
-  }
-
-  async function revoke(userId) {
-    setBusy(userId);
-    setError(null);
-    try {
-      const d = await api.teamRevoke({ userId });
-      setState((s) => ({ ...s, team: d.team }));
-      setConfirming(null);
-    } catch (e) { setError(e.message); }
-    setBusy(null);
-  }
+  };
 
   if (state.loading) return <p className="muted">Loading…</p>;
-  if (state.error) return <p className="err">{state.error}</p>;
+  if (state.error) return <div className="notice err">{state.error}</div>;
 
   const { team = [], canManage, me } = state;
 
   return (
-    <div>
-      <h2 className="view-title">Team</h2>
-      <p className="muted small">
-        Access is invite only. Sign-off authority is enforced by the system, not
-        by convention, so a drafter cannot approve a document even if they try.
-      </p>
-
-      {error && <p className="err">{error}</p>}
-
-      {canManage && (
-        <div className="card">
-          <div className="card-head"><h3>Invite someone</h3></div>
-          <div className="invite-grid">
-            <label className="gap-input">
-              <span>Name</span>
-              <input value={invite.name} onChange={(e) => setInvite({ ...invite, name: e.target.value })} />
-            </label>
-            <label className="gap-input">
-              <span>Work email</span>
-              <input value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} />
-            </label>
-            <label className="gap-input">
-              <span>Role</span>
-              <select value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
-                <option value="drafter">Drafter</option>
-                <option value="approver">Approver</option>
-              </select>
-            </label>
+    <>
+      <div className="section">
+        <div className="section-head">
+          <div>
+            <div className="section-title">Team</div>
+            <div className="section-hint">
+              Access is invite only. Sign-off authority is enforced by the system,
+              not by convention, so a drafter cannot approve a document even if they try.
+            </div>
           </div>
-          <p className="hint">{ROLE_NOTE[invite.role]}</p>
-          <button
-            className="btn-primary"
-            disabled={busy === 'invite' || !invite.name || !invite.email.includes('@')}
-            onClick={doInvite}
-          >
-            {busy === 'invite' ? 'Inviting…' : 'Send invitation'}
-          </button>
         </div>
-      )}
 
-      <div className="card">
-        <div className="card-head"><h3>People</h3></div>
-        <div className="list">
+        {error && <div className="notice err">{error}</div>}
+
+        {canManage && (
+          <div className="panel-box">
+            <div className="box-title">Invite someone</div>
+            <div className="invite-grid">
+              <label className="field">
+                <span>Name</span>
+                <input value={invite.name} onChange={(e) => setInvite({ ...invite, name: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>Work email</span>
+                <input value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} />
+              </label>
+              <label className="field">
+                <span>Role</span>
+                <select value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
+                  <option value="drafter">Drafter</option>
+                  <option value="approver">Approver</option>
+                </select>
+              </label>
+            </div>
+            <p className="prov">{ROLE_NOTE[invite.role]}</p>
+            <button
+              className="btn-primary"
+              style={{ marginTop: 14 }}
+              disabled={busy === 'invite' || !invite.name || !invite.email.includes('@')}
+              onClick={() => run('invite', async () => {
+                const d = await api.teamInvite(invite);
+                setInvite({ name: '', email: '', role: 'drafter' });
+                return d;
+              })}
+            >
+              {busy === 'invite' ? 'Inviting…' : 'Send invitation'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="section">
+        <div className="section-head">
+          <div className="section-title">People</div>
+          <div className="section-hint">Revoking someone ends their session immediately</div>
+        </div>
+
+        <div className="rows">
           {team.map((u) => (
-            <div key={u.id} className={`list-row static ${u.active ? '' : 'revoked'}`}>
-              <div className="list-main">
+            <div key={u.id} className={u.active ? 'row' : 'row dim'}>
+              <div className="row-main">
                 <strong>{u.name}{u.id === me ? ' (you)' : ''}</strong>
-                <span className="muted small">{u.email}</span>
-                <span className="hint">
+                <span className="row-sub">{u.email}</span>
+                <span className="prov">
                   {u.last_login_at
                     ? `Last signed in ${new Date(u.last_login_at).toLocaleDateString('en-GB')}`
                     : 'Has not signed in yet'}
                 </span>
               </div>
 
-              <div className="list-side">
-                {!u.active && <span className="tag">revoked</span>}
+              <div className="row-side">
+                {!u.active && <span className="badge revoked">revoked</span>}
 
                 {u.active && canManage && u.role !== 'owner' && u.id !== me ? (
                   <select
-                    className="role-select"
                     value={u.role}
                     disabled={busy === u.id}
-                    onChange={(e) => changeRole(u.id, e.target.value)}
+                    style={{ width: 'auto' }}
+                    onChange={(e) => run(u.id, () => api.teamRole({ userId: u.id, role: e.target.value }))}
                   >
                     <option value="drafter">Drafter</option>
                     <option value="approver">Approver</option>
                   </select>
                 ) : (
-                  <span className={`tag tag-${u.role === 'owner' ? 'approved' : 'active'}`}>{u.role}</span>
+                  <span className={`badge ${u.role}`}>{u.role}</span>
                 )}
 
                 {u.active && canManage && u.role !== 'owner' && u.id !== me && (
                   confirming === u.id ? (
                     <>
-                      <button className="btn-tiny" disabled={busy === u.id} onClick={() => revoke(u.id)}>
+                      <button
+                        className="btn btn-sm"
+                        disabled={busy === u.id}
+                        onClick={() => run(u.id, async () => {
+                          const d = await api.teamRevoke({ userId: u.id });
+                          setConfirming(null);
+                          return d;
+                        })}
+                      >
                         Confirm
                       </button>
-                      <button className="btn-tiny ghost" onClick={() => setConfirming(null)}>Cancel</button>
+                      <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
                     </>
                   ) : (
-                    <button className="btn-tiny ghost" onClick={() => setConfirming(u.id)}>Revoke</button>
+                    <button className="btn-ghost" onClick={() => setConfirming(u.id)}>Revoke</button>
                   )
                 )}
               </div>
             </div>
           ))}
         </div>
-
-        {canManage && (
-          <p className="hint" style={{ marginTop: 14 }}>
-            Revoking someone ends their current session immediately rather than
-            waiting for it to expire.
-          </p>
-        )}
       </div>
-    </div>
+    </>
   );
 }

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
-// Bring your own template. This is the two minute proof: a prospect pastes a
-// letter they have actually issued, and watches it become a working template.
+// Bring your own template: paste a letter the firm has actually issued and
+// watch it become a working template. This is the two minute proof.
 
 export default function Templates() {
   const [templates, setTemplates] = useState([]);
@@ -13,22 +13,15 @@ export default function Templates() {
   const [error, setError] = useState(null);
 
   async function load() {
-    try {
-      const d = await api.listTemplates();
-      setTemplates(d.templates || []);
-    } catch (e) { setError(e.message); }
+    try { setTemplates((await api.listTemplates()).templates || []); }
+    catch (e) { setError(e.message); }
   }
-
   useEffect(() => { load(); }, []);
 
   async function analyse() {
-    setBusy('analyse');
-    setError(null);
-    setResult(null);
-    try {
-      const d = await api.analyseTemplate({ documentText: text, hint });
-      setResult(d);
-    } catch (e) { setError(e.message); }
+    setBusy('analyse'); setError(null); setResult(null);
+    try { setResult(await api.analyseTemplate({ documentText: text, hint })); }
+    catch (e) { setError(e.message); }
     setBusy(null);
   }
 
@@ -36,111 +29,145 @@ export default function Templates() {
     setBusy('save');
     try {
       await api.saveTemplate({ definition: result.definition, name: result.definition.name });
-      setResult(null);
-      setText('');
-      setHint('');
+      setResult(null); setText(''); setHint('');
       await load();
     } catch (e) { setError(e.message); }
     setBusy(null);
   }
 
   return (
-    <div>
-      <h2 className="view-title">Templates</h2>
-      <p className="muted small">
-        Paste a document the firm has actually issued. The engine separates the
-        standard wording from the parts that change, and proposes the checks to
-        run on every future copy.
-      </p>
+    <>
+      <div className="section">
+        <div className="section-head">
+          <div>
+            <div className="section-title">Templates</div>
+            <div className="section-hint">
+              Paste a document the firm has actually issued. The engine separates
+              the standard wording from the parts that change, and proposes the
+              checks to run on every future copy.
+            </div>
+          </div>
+        </div>
 
-      <div className="card">
-        <div className="card-head"><h3>Add a template from a real document</h3></div>
+        <div className="panel-box">
+          <label className="field">
+            <span>What is this document</span>
+            <input
+              placeholder="engagement letter, client care letter, closing letter"
+              value={hint}
+              onChange={(e) => setHint(e.target.value)}
+            />
+          </label>
 
-        <input
-          className="text-input"
-          placeholder="What is this document? For example: engagement letter"
-          value={hint}
-          onChange={(e) => setHint(e.target.value)}
-        />
+          <label className="field">
+            <span>The full text</span>
+            <textarea
+              className="tall"
+              placeholder="Paste the whole document here."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </label>
 
-        <textarea
-          className="editor tall"
-          placeholder="Paste the full text of the document here."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={12}
-        />
+          <button className="btn-primary" disabled={busy === 'analyse' || text.length < 120} onClick={analyse}>
+            {busy === 'analyse' ? 'Reading the document…' : 'Analyse this document'}
+          </button>
 
-        <button className="btn-primary" disabled={busy === 'analyse' || text.length < 120} onClick={analyse}>
-          {busy === 'analyse' ? 'Reading the document…' : 'Analyse this document'}
-        </button>
-
-        {error && <p className="err">{error}</p>}
+          {error && <div className="notice err" style={{ marginTop: 14 }}>{error}</div>}
+        </div>
       </div>
 
       {result && (
-        <div className="card card-ok">
-          <div className="card-head">
-            <h3>{result.definition.name}</h3>
-            <span className="pill pill-ok">{result.summary.fixed + result.summary.field + result.summary.bespoke} blocks</span>
+        <div className="section">
+          <div className="section-head">
+            <div className="section-title">{result.definition.name}</div>
+            <div className="section-hint">Review the split before saving</div>
           </div>
 
-          <div className="summary-strip">
-            <span><strong>{result.summary.fixed}</strong> standard clauses</span>
-            <span><strong>{result.summary.field}</strong> merged lines</span>
-            <span><strong>{result.summary.bespoke}</strong> drafted per matter</span>
-            <span><strong>{result.summary.requiredFields}</strong> fields needed</span>
-            <span><strong>{result.summary.blocking}</strong> blocking checks</span>
+          <div className="stats">
+            <div className="stat">
+              <div className="stat-value">{result.summary.fixed}</div>
+              <div className="stat-label">Standard clauses</div>
+              <div className="stat-note">The AI never touches these</div>
+            </div>
+            <div className="stat">
+              <div className="stat-value">{result.summary.field}</div>
+              <div className="stat-label">Merged lines</div>
+              <div className="stat-note">{result.summary.requiredFields} fields needed</div>
+            </div>
+            <div className="stat">
+              <div className="stat-value">{result.summary.bespoke}</div>
+              <div className="stat-label">Drafted per matter</div>
+              <div className="stat-note">Grounded on firm precedents</div>
+            </div>
+            <div className="stat">
+              <div className="stat-value">{result.summary.blocking}</div>
+              <div className="stat-label">Blocking checks</div>
+              <div className="stat-note">{result.summary.reviewRules} rules in total</div>
+            </div>
           </div>
 
-          <div className="blocks-preview">
-            {result.definition.blocks.map((b) => (
-              <div key={b.key} className={`block block-${b.kind}`}>
-                <span className="block-kind">
-                  {b.kind === 'fixed' && 'Standard · reproduced exactly, AI never touches it'}
-                  {b.kind === 'field' && 'Merged · filled from the matter record'}
-                  {b.kind === 'bespoke' && 'Drafted fresh each time'}
-                </span>
-                <p className="block-body">{b.kind === 'bespoke' ? b.prompt : b.body}</p>
-              </div>
-            ))}
-          </div>
-
-          {result.definition.reviewRules.length > 0 && (
-            <div className="rules">
-              <p className="small"><strong>Checks on every future copy</strong></p>
-              {result.definition.reviewRules.map((r) => (
-                <div key={r.code} className={`rule rule-${r.severity}`}>
-                  <span className="flag-sev">{r.severity}</span>
-                  <span>{r.message}</span>
+          <div className="panel-box" style={{ marginTop: 16 }}>
+            <div className="box-title">The split</div>
+            <div className="blocks-preview">
+              {result.definition.blocks.map((b) => (
+                <div key={b.key} className={`block block-${b.kind}`}>
+                  <span className="block-kind">
+                    {b.kind === 'fixed' && 'Standard · reproduced exactly'}
+                    {b.kind === 'field' && 'Merged · filled from the matter record'}
+                    {b.kind === 'bespoke' && 'Drafted fresh each time'}
+                  </span>
+                  <p className="block-body">{b.kind === 'bespoke' ? b.prompt : b.body}</p>
                 </div>
               ))}
             </div>
-          )}
 
-          <button className="btn-primary" disabled={busy === 'save'} onClick={save}>
-            {busy === 'save' ? 'Saving…' : 'Save as a template'}
-          </button>
+            {result.definition.reviewRules.length > 0 && (
+              <>
+                <div className="box-title" style={{ marginTop: 20 }}>Checks on every future copy</div>
+                {result.definition.reviewRules.map((r) => (
+                  <div className="rule" key={r.code}>
+                    <span className={`badge ${r.severity}`}>{r.severity}</span>
+                    <span>{r.message}</span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            <button className="btn-primary" style={{ marginTop: 20 }} disabled={busy === 'save'} onClick={save}>
+              {busy === 'save' ? 'Saving…' : 'Save as a template'}
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="card">
-        <div className="card-head"><h3>Saved templates</h3></div>
-        {templates.length === 0 && <p className="muted small">None yet.</p>}
-        <div className="list">
-          {templates.map((t) => (
-            <div key={t.id} className="list-row static">
-              <div className="list-main">
-                <strong>{t.name}</strong>
-                <span className="muted small">
-                  {t.summary.fixed} standard · {t.summary.field} merged ·
-                  {' '}{t.summary.bespoke} drafted · {t.summary.blocking} blocking checks
-                </span>
-              </div>
-            </div>
-          ))}
+      <div className="section">
+        <div className="section-head">
+          <div className="section-title">Saved templates</div>
+          <div className="section-hint">Configuration the engine reads, never code</div>
         </div>
+
+        {templates.length === 0 ? (
+          <div className="panel-box"><p className="box-empty">None yet.</p></div>
+        ) : (
+          <div className="rows">
+            {templates.map((t) => (
+              <div key={t.id} className="row">
+                <div className="row-main">
+                  <strong>{t.name}</strong>
+                  <span className="row-sub">
+                    {t.summary.fixed} standard · {t.summary.field} merged ·{' '}
+                    {t.summary.bespoke} drafted · {t.summary.requiredFields} fields
+                  </span>
+                </div>
+                <div className="row-side">
+                  <span className="chip">{t.summary.blocking} blocking</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }

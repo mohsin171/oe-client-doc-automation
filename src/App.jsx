@@ -7,12 +7,20 @@ import Review from './views/Review.jsx';
 import Templates from './views/Templates.jsx';
 import Team from './views/Team.jsx';
 
+const STATUS_LABEL = {
+  incomplete: 'Needs data',
+  open: 'Ready to draft',
+  active: 'In progress',
+  closed: 'Closed',
+};
+
 export default function App() {
   const [session, setSession] = useState({ loading: true });
   const [tab, setTab] = useState('queue');
   const [matterId, setMatterId] = useState(null);
   const [documentId, setDocumentId] = useState(null);
   const [showNew, setShowNew] = useState(false);
+  const [matters, setMatters] = useState([]);
 
   const loadSession = useCallback(() => {
     api.session()
@@ -20,38 +28,47 @@ export default function App() {
       .catch((e) => setSession({ loading: false, signedIn: false, error: e.message }));
   }, []);
 
-  useEffect(() => { loadSession(); }, [loadSession]);
-
-  // Any route can expire mid-session. When that happens, drop straight back to
-  // the sign-in screen rather than showing a broken view.
-  useEffect(() => {
-    const onUnauthorised = () => setSession((s) => ({ ...s, signedIn: false }));
-    window.addEventListener('oe-unauthenticated', onUnauthorised);
-    return () => window.removeEventListener('oe-unauthenticated', onUnauthorised);
+  const loadMatters = useCallback(() => {
+    api.listMatters().then((d) => setMatters(d.matters || [])).catch(() => {});
   }, []);
 
+  useEffect(() => { loadSession(); }, [loadSession]);
+  useEffect(() => { if (session.signedIn) loadMatters(); }, [session.signedIn, loadMatters]);
+
+  useEffect(() => {
+    const drop = () => setSession((s) => ({ ...s, signedIn: false }));
+    window.addEventListener('oe-unauthenticated', drop);
+    return () => window.removeEventListener('oe-unauthenticated', drop);
+  }, []);
+
+  function backToQueue() { setMatterId(null); setDocumentId(null); loadMatters(); }
   function openMatter(id) { setDocumentId(null); setMatterId(id); }
-  function backToQueue() { setMatterId(null); setDocumentId(null); }
 
   async function signOut() {
-    try { await api.logout(); } catch (_) { /* cookie is cleared regardless */ }
-    backToQueue();
+    try { await api.logout(); } catch (_) { /* cookie clears regardless */ }
+    setMatterId(null); setDocumentId(null);
     setSession({ loading: false, signedIn: false });
   }
 
   if (session.loading) {
-    return <div className="wrap"><p className="muted">Loading…</p></div>;
+    return <div className="main"><p className="muted">Loading…</p></div>;
   }
-
   if (!session.signedIn) {
     return <Login status={session} onSignedIn={loadSession} />;
   }
 
   const isOwner = session.user?.role === 'owner';
+  const onQueue = !matterId && !documentId;
+
+  const counts = matters.reduce((acc, m) => {
+    acc[m.status] = (acc[m.status] || 0) + 1;
+    acc.review += m.pending_documents || 0;
+    return acc;
+  }, { review: 0 });
 
   let view;
   if (documentId) {
-    view = <Review documentId={documentId} onBack={() => setDocumentId(null)} />;
+    view = <Review documentId={documentId} onBack={() => { setDocumentId(null); loadMatters(); }} />;
   } else if (matterId) {
     view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={setDocumentId} />;
   } else if (tab === 'templates') {
@@ -59,21 +76,79 @@ export default function App() {
   } else if (tab === 'team') {
     view = <Team />;
   } else {
-    view = <Queue onOpenMatter={openMatter} onNewMatter={() => setShowNew(true)} />;
+    view = (
+      <Queue
+        matters={matters}
+        me={session.user}
+        onOpenMatter={openMatter}
+        onNewMatter={() => setShowNew(true)}
+      />
+    );
   }
 
-  const onQueue = !matterId && !documentId;
-
   return (
-    <div className="wrap wide">
-      <header className="app-head">
-        <div>
-          <p className="eyebrow">{session.firm?.name}</p>
-          <h1 className="app-title">Document Engine</h1>
-        </div>
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="sidebar-inner">
+          <div className="brand">
+            <div className="brand-mark"><span /></div>
+            <div>
+              <div className="brand-name">Orca Edge</div>
+              <div className="brand-sub">Document Generation<br />&amp; Review Automation</div>
+            </div>
+          </div>
 
-        <div className="head-right">
-          <nav className="tabs">
+          <div className="side-section">
+            <div className="side-label">Workspace</div>
+            <button
+              className={onQueue && tab === 'queue' ? 'side-item-btn active' : 'side-item-btn'}
+              onClick={() => { backToQueue(); setTab('queue'); }}
+            >
+              <span className="side-item-label">Queue</span>
+              <span className="side-count">{matters.length || ''}</span>
+            </button>
+            <button
+              className={onQueue && tab === 'templates' ? 'side-item-btn active' : 'side-item-btn'}
+              onClick={() => { backToQueue(); setTab('templates'); }}
+            >
+              <span className="side-item-label">Templates</span>
+            </button>
+            {isOwner && (
+              <button
+                className={onQueue && tab === 'team' ? 'side-item-btn active' : 'side-item-btn'}
+                onClick={() => { backToQueue(); setTab('team'); }}
+              >
+                <span className="side-item-label">Team</span>
+              </button>
+            )}
+          </div>
+
+          {matters.length > 0 && (
+            <div className="side-section">
+              <div className="side-label">Matters</div>
+              {['incomplete', 'open', 'active', 'closed'].map((k) => (
+                counts[k] ? (
+                  <div className="side-item" key={k}>
+                    <span className={`side-dot ${k}`} />
+                    <span className="side-item-label">{STATUS_LABEL[k]}</span>
+                    <span className={k === 'incomplete' ? 'side-count urgent' : 'side-count'}>{counts[k]}</span>
+                  </div>
+                ) : null
+              ))}
+            </div>
+          )}
+
+          <div className="side-foot">
+            {session.firm?.name}
+            <br />
+            Signed off by a person, always.
+          </div>
+        </div>
+      </aside>
+
+      <div className="workspace">
+        <header className="topnav">
+          <nav className="topnav-tabs">
             <button
               className={onQueue && tab === 'queue' ? 'tab active' : 'tab'}
               onClick={() => { backToQueue(); setTab('queue'); }}
@@ -97,35 +172,31 @@ export default function App() {
           </nav>
 
           <div className="who">
-            <span className="who-name">{session.user.name}</span>
-            <span className="who-role">{session.user.role}</span>
-            <button className="btn-tiny ghost" onClick={signOut}>Sign out</button>
+            <div className="who-block">
+              <div className="who-name">{session.user.name}</div>
+              <div className="who-role">{session.user.role}</div>
+            </div>
+            <button className="btn btn-sm" onClick={signOut}>Sign out</button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {session.emailConfigured === false && isOwner && (
-        <div className="banner">
-          Email is not connected, so sign-in codes are written to the server log
-          rather than sent. Add RESEND_API_KEY before inviting anyone.
-        </div>
-      )}
+        <main className="main">
+          {session.emailConfigured === false && isOwner && (
+            <div className="notice warn">
+              Email is not connected, so sign-in codes are written to the server log
+              rather than sent. Add RESEND_API_KEY before inviting anyone.
+            </div>
+          )}
+          {view}
+        </main>
+      </div>
 
       {showNew && (
         <NewMatter
           onClose={() => setShowNew(false)}
-          onCreated={(id) => { setShowNew(false); openMatter(id); }}
+          onCreated={(id) => { setShowNew(false); loadMatters(); openMatter(id); }}
         />
       )}
-
-      <main>{view}</main>
-
-      <footer>
-        <p>
-          The AI never fills a gap, and the AI never touches fixed clauses.
-          A qualified person signs off on everything before it leaves the firm.
-        </p>
-      </footer>
     </div>
   );
 }
@@ -136,12 +207,10 @@ function NewMatter({ onClose, onCreated }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   async function create() {
-    setBusy(true);
-    setError(null);
+    setBusy(true); setError(null);
     try {
       const d = await api.createMatter(form);
       onCreated(d.matter.id);
@@ -150,36 +219,36 @@ function NewMatter({ onClose, onCreated }) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-scrim" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Open a matter</h3>
-        <p className="muted small">
-          The hard facts go in the form, because they must be exactly right.
-          Scope and context come next, and can be dictated once that is built.
+        <h2>Open a matter</h2>
+        <p className="muted">
+          Hard facts go in the form, because they have to be exactly right.
+          Scope and context follow, and can be dictated once that is built.
         </p>
 
-        <label className="gap-input">
+        <label className="field">
           <span>Client legal name</span>
           <input value={form.clientLegalName} onChange={set('clientLegalName')} />
         </label>
-        <label className="gap-input">
+        <label className="field">
           <span>Matter type</span>
           <input value={form.matterType} onChange={set('matterType')} placeholder="conveyancing, probate, commercial" />
         </label>
-        <label className="gap-input">
+        <label className="field">
           <span>Client email</span>
           <input value={form.clientEmail} onChange={set('clientEmail')} />
         </label>
-        <label className="gap-input">
+        <label className="field">
           <span>Client address</span>
           <input value={form.clientAddress} onChange={set('clientAddress')} />
         </label>
-        <label className="gap-input">
-          <span>Reference (optional)</span>
+        <label className="field">
+          <span>Reference</span>
           <input value={form.reference} onChange={set('reference')} placeholder="generated if left blank" />
         </label>
 
-        {error && <p className="err">{error}</p>}
+        {error && <div className="notice err">{error}</div>}
 
         <div className="btn-row">
           <button
@@ -189,7 +258,7 @@ function NewMatter({ onClose, onCreated }) {
           >
             {busy ? 'Opening…' : 'Open matter'}
           </button>
-          <button className="btn-small ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>
