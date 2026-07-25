@@ -10,7 +10,7 @@ import {
 } from '../lib/store.js';
 import { sql } from '../lib/db.js';
 import { requireContext, ok, bad, readBody } from '../lib/context.js';
-import { buildFormSchema, splitSchema, fieldMeta } from '../lib/fields.js';
+import { buildFormSchema, splitSchema, fieldMeta, canonicalKey, isSystemField } from '../lib/fields.js';
 import { extractFromNarrative } from '../lib/extract.js';
 
 // A file needs some things no document ever prints. An email address is how
@@ -41,7 +41,10 @@ async function requiredFor(firmId, matter) {
   const set = new Set(REQUIRED_TO_OPEN);
   for (const t of templates) {
     if (matter && t.doc_type && matter.matter_type && t.doc_type !== matter.matter_type) continue;
-    for (const f of (t.definition?.requiredFields || [])) set.add(f);
+    for (const f of (t.definition?.requiredFields || [])) {
+      const k = canonicalKey(f);
+      if (!isSystemField(k)) set.add(k);
+    }
   }
   return [...set];
 }
