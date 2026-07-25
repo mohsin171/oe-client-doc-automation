@@ -12,12 +12,47 @@ import {
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
 import { generate } from '../lib/engine.js';
+import { canonicalKey, isSystemField, SYSTEM_FIELDS } from '../lib/fields.js';
 import { requireContext, canApprove, ok, bad, readBody } from '../lib/context.js';
 
 function valuesFrom(fields) {
   const out = {};
-  for (const f of fields) out[f.key] = f.value;
+  for (const f of fields) out[canonicalKey(f.key)] = f.value;
   return out;
+}
+
+// UK convention: title plus surname, or Sirs for a company.
+function salutationFor(name) {
+  const n = String(name || '').trim();
+  if (!n) return '';
+  if (/\b(limited|ltd|llp|plc)\b/i.test(n)) return 'Sirs';
+  const parts = n.split(/\s+/);
+  const titles = ['mr', 'mrs', 'ms', 'miss', 'dr', 'professor'];
+  if (parts.length > 1 && titles.includes(parts[0].toLowerCase())) {
+    return `${parts[0]} ${parts[parts.length - 1]}`;
+  }
+  if (/^mr and mrs/i.test(n)) return `Mr and Mrs ${parts[parts.length - 1]}`;
+  return parts[parts.length - 1];
+}
+
+// Everything the system already knows. Asking a person for the reference it
+// generated itself, or for today's date, is busywork that blocks a letter on
+// information nobody needs to supply.
+function systemValues({ matter, ctx, values }) {
+  const branding = ctx.branding || {};
+  return {
+    letter_date: new Date().toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    }),
+    matter_reference: matter.reference || '',
+    client_salutation: salutationFor(values.client_legal_name || matter.client_name),
+    firm_name: branding.letterhead || ctx.firm_name || '',
+    firm_address: branding.address || '',
+    fee_earner_title: ctx.title || '',
+    matter_subject: values.scope_summary
+      ? String(values.scope_summary).split(/[.;]/)[0].slice(0, 90)
+      : (matter.matter_type || ''),
+  };
 }
 
 export default async function handler(req, res) {
@@ -78,10 +113,16 @@ export default async function handler(req, res) {
 
       const definition = template.definition || {};
       const fields = await getMatterFields(matterId);
-      const values = valuesFrom(fields);
+      const captured = valuesFrom(fields);
+      const supplied = systemValues({ matter, ctx, values: captured });
+      const values = { ...supplied, ...captured };
 
-      // Gate one: the template's own required fields against what was captured.
-      const completeness = await assessCompleteness(matterId, definition.requiredFields || []);
+      // Gate one covers only what a person has to provide. System values are
+      // filled here, so they are excluded rather than blocking generation.
+      const mustAsk = (definition.requiredFields || [])
+        .map(canonicalKey)
+        .filter((f) => !isSystemField(f));
+      const completeness = await assessCompleteness(matterId, mustAsk);
       if (!completeness.canGenerate) {
         return bad(res, JSON.stringify({
           reason: 'incomplete',
@@ -101,6 +142,9 @@ export default async function handler(req, res) {
         precedents,
         firmName: ctx.firm_name,
         docType: template.doc_type,
+        // A system value can legitimately be blank, such as a fee earner with
+        // no recorded grade. Those drop out of the text rather than stop it.
+        optional: new Set(SYSTEM_FIELDS),
       });
 
       if (!result.ok) {
