@@ -257,12 +257,13 @@ export default function Templates() {
             </div>
           </div>
 
-          {result.corpus?.rejected > 0 && (
+          {result.corpus?.recovered > 0 && (
             <div className="notice info">
-              {result.corpus.rejected} proposed clause
-              {result.corpus.rejected > 1 ? 's were' : ' was'} rejected for not matching
-              your wording exactly. A paraphrased standard clause is the one thing this
-              is built to prevent.
+              {result.corpus.recovered} standard clause
+              {result.corpus.recovered > 1 ? 's were' : ' was'} added back automatically.
+              Every clause appearing in all {result.corpus.n} of your documents is included
+              with your exact wording, whether or not it was placed correctly first time.
+              A protected clause going missing is not something this will let happen.
             </div>
           )}
 
