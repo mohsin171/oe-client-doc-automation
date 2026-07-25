@@ -139,10 +139,10 @@ export default function NewMatter({ onClose, onCreated }) {
       <div className="form-page">
         <div className="section-head">
           <div>
-            <div className="section-title">Open a matter</div>
+            <div className="section-title">Client details</div>
             <div className="section-hint">
-              Captured once, reused by every document on this file. Nothing here
-              is guessed, and no document generates while a required field is empty.
+              Entered once, reused by every document on this file. Nothing here is
+              guessed, and no document generates while a required field is empty.
             </div>
           </div>
           {total > 0 && <span className="count">{filled} of {total}</span>}
@@ -154,7 +154,7 @@ export default function NewMatter({ onClose, onCreated }) {
         {schema && templates.length === 0 && (
           <div className="notice warn">
             No templates yet, so only the basics are captured. Add a template and
-            this form will ask for everything it needs.
+            this page will ask for everything that template needs.
           </div>
         )}
 
@@ -166,7 +166,8 @@ export default function NewMatter({ onClose, onCreated }) {
               {clients.map((c) => <option key={c.id} value={c.id}>{c.legal_name}</option>)}
             </select>
             <span className="prov">
-              Picking an existing client fills their details and keeps the name consistent.
+              Picking someone already on file fills their details and keeps the name
+              spelled the same way everywhere.
             </span>
           </div>
         )}
@@ -189,11 +190,11 @@ export default function NewMatter({ onClose, onCreated }) {
 
         <div className="form-foot">
           <button className="btn-primary" disabled={busy || !ready} onClick={create}>
-            {busy ? 'Opening…' : 'Open matter'}
+            {busy ? 'Saving…' : 'Save client details'}
           </button>
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           {!ready && (
-            <span className="prov">Client legal name and matter type are the minimum.</span>
+            <span className="prov">The client's legal name and the type of work are the minimum.</span>
           )}
         </div>
       </div>

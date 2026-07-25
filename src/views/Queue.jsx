@@ -20,12 +20,12 @@ export default function Queue({ matters = [], onOpenMatter, onNewMatter }) {
       <div className="section">
         <div className="empty-hero">
           <div className="eh-icon">+</div>
-          <h2>No matters yet</h2>
+          <h2>Nothing on file yet</h2>
           <p>
-            Open a matter to capture the client details once. Every document on
-            that file then draws from the same record, with no re-entry.
+            Enter a client's details once. Every document on that file then draws
+            from the same record, with nothing typed twice.
           </p>
-          <button className="btn-primary" onClick={onNewMatter}>Open a matter</button>
+          <button className="btn-primary" onClick={onNewMatter}>Add client details</button>
         </div>
       </div>
     );
@@ -39,7 +39,7 @@ export default function Queue({ matters = [], onOpenMatter, onNewMatter }) {
             <div className="section-title">Your queue</div>
             <div className="section-hint">What is waiting on a person right now</div>
           </div>
-          <button className="btn-primary" onClick={onNewMatter}>New matter</button>
+          <button className="btn-primary" onClick={onNewMatter}>Add client details</button>
         </div>
 
         <div className="stats">

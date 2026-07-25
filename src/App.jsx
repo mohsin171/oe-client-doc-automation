@@ -128,6 +128,12 @@ export default function App() {
               <span className="side-count">{matters.length || ''}</span>
             </button>
             <button
+              className={tab === 'new' ? 'side-item-btn active' : 'side-item-btn'}
+              onClick={() => { setMatterId(null); setDocumentId(null); setTab('new'); }}
+            >
+              <span className="side-item-label">Client details</span>
+            </button>
+            <button
               className={onQueue && tab === 'templates' ? 'side-item-btn active' : 'side-item-btn'}
               onClick={() => { backToQueue(); setTab('templates'); }}
             >
@@ -175,7 +181,12 @@ export default function App() {
             >
               Queue
             </button>
-            {tab === 'new' && <button className="tab active">New matter</button>}
+            <button
+              className={tab === 'new' ? 'tab active' : 'tab'}
+              onClick={() => { setMatterId(null); setDocumentId(null); setTab('new'); }}
+            >
+              Client details
+            </button>
             <button
               className={onQueue && tab === 'templates' ? 'tab active' : 'tab'}
               onClick={() => { backToQueue(); setTab('templates'); }}
