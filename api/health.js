@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       checks.schemaApplied = (t[0]?.n || 0) >= 10;
 
       if (checks.schemaApplied) {
-        const f = await sql`SELECT name, slug, vertical FROM firms ORDER BY id LIMIT 1`;
+        const f = await sql`SELECT name, slug, vertical, branding FROM firms ORDER BY id LIMIT 1`;
         if (f[0]) {
           checks.seedApplied = true;
           checks.firm = f[0];

@@ -8,7 +8,7 @@ VALUES (
   'Harrow & Fenn Solicitors',
   'harrow-fenn',
   'law',
-  '{"letterhead":"Harrow & Fenn Solicitors","address":"18 Bishopsgate Row, Leeds LS1 4TQ","headingFont":"Georgia","bodyFont":"Arial","refFormat":"HF/{year}/{seq}","signatureBlock":"Harrow & Fenn Solicitors, regulated by the Solicitors Regulation Authority"}',
+  '{"letterhead":"Harrow & Fenn Solicitors","shortName":"Harrow & Fenn","address":"18 Bishopsgate Row, Leeds LS1 4TQ","headingFont":"Georgia","bodyFont":"Arial","refFormat":"HF/{year}/{seq}","signatureBlock":"Harrow & Fenn Solicitors, regulated by the Solicitors Regulation Authority","initials":"HF","markFrom":"#1B3A5C","markTo":"#0E2237","accent":"#8C6B3F"}',
   '{"senderPolicy":"assigned_fee_earner","baselineMinutes":{"engagement_letter":95,"client_care_letter":45,"status_letter":25},"currency":"GBP"}'
 )
 ON CONFLICT (slug) DO NOTHING;

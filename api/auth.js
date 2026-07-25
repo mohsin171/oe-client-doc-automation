@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         user: {
           id: ctx.user_id, name: ctx.name, email: ctx.email, role: ctx.role,
         },
-        firm: { id: ctx.firm_id, name: ctx.firm_name },
+        firm: { id: ctx.firm_id, name: ctx.firm_name, branding: ctx.branding || {} },
         emailConfigured: emailConfigured(),
       });
     }
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
       setCookie(res, token);
 
       const full = await sql`
-        SELECT u.id, u.name, u.email, u.role, u.firm_id, f.name AS firm_name
+        SELECT u.id, u.name, u.email, u.role, u.firm_id, f.name AS firm_name, f.branding
         FROM users u JOIN firms f ON f.id = u.firm_id WHERE u.id = ${user.id}`;
       const u = full[0];
 
@@ -136,7 +136,7 @@ export default async function handler(req, res) {
       return ok(res, {
         signedIn: true,
         user: { id: u.id, name: u.name, email: u.email, role: u.role },
-        firm: { id: u.firm_id, name: u.firm_name },
+        firm: { id: u.firm_id, name: u.firm_name, branding: u.branding || {} },
       });
     }
 

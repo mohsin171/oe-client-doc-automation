@@ -6,6 +6,7 @@ import Matter from './views/Matter.jsx';
 import Review from './views/Review.jsx';
 import Templates from './views/Templates.jsx';
 import Team from './views/Team.jsx';
+import FirmMark from './views/FirmMark.jsx';
 
 const STATUS_LABEL = {
   incomplete: 'Needs data',
@@ -24,7 +25,17 @@ export default function App() {
 
   const loadSession = useCallback(() => {
     api.session()
-      .then((d) => setSession({ loading: false, ...d }))
+      .then(async (d) => {
+        // Before sign-in there is no session, so the firm identity for the
+        // sign-in screen comes from the public health endpoint.
+        if (!d.signedIn) {
+          try {
+            const h = await api.health();
+            d.firm = h.checks?.firm || null;
+          } catch (_) { /* sign-in still works unbranded */ }
+        }
+        setSession({ loading: false, ...d });
+      })
       .catch((e) => setSession({ loading: false, signedIn: false, error: e.message }));
   }, []);
 
@@ -36,10 +47,10 @@ export default function App() {
   useEffect(() => { if (session.signedIn) loadMatters(); }, [session.signedIn, loadMatters]);
 
   useEffect(() => {
-    const drop = () => setSession((s) => ({ ...s, signedIn: false }));
+    const drop = () => { setMatters([]); loadSession(); };
     window.addEventListener('oe-unauthenticated', drop);
     return () => window.removeEventListener('oe-unauthenticated', drop);
-  }, []);
+  }, [loadSession]);
 
   function backToQueue() { setMatterId(null); setDocumentId(null); loadMatters(); }
   function openMatter(id) { setDocumentId(null); setMatterId(id); }
@@ -47,18 +58,21 @@ export default function App() {
   async function signOut() {
     try { await api.logout(); } catch (_) { /* cookie clears regardless */ }
     setMatterId(null); setDocumentId(null);
-    setSession({ loading: false, signedIn: false });
+    setMatters([]);
+    loadSession();
   }
 
   if (session.loading) {
     return <div className="main"><p className="muted">Loading…</p></div>;
   }
   if (!session.signedIn) {
-    return <Login status={session} onSignedIn={loadSession} />;
+    return <Login status={session} firm={session.firm} onSignedIn={loadSession} />;
   }
 
   const isOwner = session.user?.role === 'owner';
   const onQueue = !matterId && !documentId;
+  const firmName = session.firm?.name || '';
+  const branding = session.firm?.branding || {};
 
   const counts = matters.reduce((acc, m) => {
     acc[m.status] = (acc[m.status] || 0) + 1;
@@ -90,10 +104,10 @@ export default function App() {
       <aside className="sidebar">
         <div className="sidebar-inner">
           <div className="brand">
-            <div className="brand-mark"><span /></div>
+            <FirmMark branding={branding} name={firmName} size={40} />
             <div>
-              <div className="brand-name">Orca Edge</div>
-              <div className="brand-sub">Document Generation<br />&amp; Review Automation</div>
+              <div className="brand-name">{branding.shortName || firmName}</div>
+              <div className="brand-sub">Document automation</div>
             </div>
           </div>
 
@@ -138,9 +152,9 @@ export default function App() {
           )}
 
           <div className="side-foot">
-            {session.firm?.name}
-            <br />
             Signed off by a person, always.
+            <br />
+            <span className="powered">Powered by Orca Edge</span>
           </div>
         </div>
       </aside>

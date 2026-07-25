@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { api } from '../api.js';
+import FirmMark from './FirmMark.jsx';
 
 // Invite only: enter your address, receive a one time code, enter the code.
 // Structure mirrors the unified operations app, rendered light rather than dark.
 
-export default function Login({ onSignedIn, status }) {
+export default function Login({ onSignedIn, status, firm }) {
   const [step, setStep] = useState('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -59,14 +60,14 @@ export default function Login({ onSignedIn, status }) {
 
       <div className="login-card">
         <div className="login-brand">
-          <div className="login-mark"><span /></div>
+          <FirmMark branding={firm?.branding || {}} name={firm?.name || ''} size={42} />
           <div>
-            <div className="login-firm">Orca Edge</div>
-            <div className="login-sub">Document Generation &amp; Review Automation</div>
+            <div className="login-firm">{firm?.branding?.shortName || firm?.name || 'Document Engine'}</div>
+            <div className="login-sub">Document automation</div>
           </div>
         </div>
 
-        {status && !status.authConfigured && (
+        {status?.authConfigured === false && (
           <div className="login-err">
             Sign-in is unavailable because SESSION_SECRET is not set. Add it in the
             Vercel project environment variables and redeploy.
@@ -96,7 +97,7 @@ export default function Login({ onSignedIn, status }) {
               {err && <div className="login-err">{err}</div>}
               <button
                 className="login-btn"
-                disabled={busy || (status && !status.authConfigured)}
+                disabled={busy || status?.authConfigured === false}
                 onClick={requestCode}
               >
                 {busy ? 'Sending…' : 'Send code'}
