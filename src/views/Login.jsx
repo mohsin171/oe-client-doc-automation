@@ -45,10 +45,20 @@ export default function Login({ onSignedIn, status }) {
   }
 
   return (
-    <div className="login-shell">
+    <div className="login-page">
+      {/* Decorative only. */}
+      <div className="orbs" aria-hidden="true">
+        <span className="orb orb-1" />
+        <span className="orb orb-2" />
+        <span className="orb orb-3" />
+        <span className="orb orb-ring" />
+        <span className="orb orb-ring-2" />
+      </div>
+
+      <div className="login-stack">
       <div className="login-card">
-        <p className="eyebrow">Orca Edge &middot; Tool 2</p>
-        <h1 className="app-title">Document Engine</h1>
+        <p className="eyebrow">Orca Edge</p>
+        <h1 className="app-title">Document Generation<br />&amp; Review Automation</h1>
         <p className="muted small login-sub">
           Sign in with your work email address. Access is granted by your firm,
           so there is nothing to register.
@@ -130,6 +140,7 @@ export default function Login({ onSignedIn, status }) {
         The AI never fills a gap, and the AI never touches fixed clauses.
         A qualified person signs off on everything before it leaves the firm.
       </p>
+      </div>
     </div>
   );
 }
