@@ -2,15 +2,11 @@
 import { sql } from '../lib/db.js';
 import { listTemplates, getTemplate, logEvent } from '../lib/store.js';
 import { ingestTemplate, summarise } from '../lib/ingest.js';
-import { resolveContext, canManageTemplates, ok, bad, readBody } from '../lib/context.js';
+import { requireContext, canManageTemplates, ok, bad, readBody } from '../lib/context.js';
 
 export default async function handler(req, res) {
-  let ctx;
-  try {
-    ctx = await resolveContext();
-  } catch (err) {
-    return bad(res, err.message, 500);
-  }
+  const ctx = await requireContext(req, res);
+  if (!ctx) return;
 
   try {
     if (req.method === 'GET') {

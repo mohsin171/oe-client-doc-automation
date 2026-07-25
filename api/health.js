@@ -6,7 +6,8 @@ export default async function handler(req, res) {
     deployed: true,
     databaseUrlSet: dbConfigured(),
     anthropicKeySet: Boolean(process.env.ANTHROPIC_API_KEY),
-    sessionSecretSet: Boolean(process.env.SESSION_SECRET),
+    sessionSecretSet: Boolean(process.env.SESSION_SECRET && process.env.SESSION_SECRET.length >= 16),
+    resendKeySet: Boolean(process.env.RESEND_API_KEY),
     schemaApplied: false,
     seedApplied: false,
     firm: null

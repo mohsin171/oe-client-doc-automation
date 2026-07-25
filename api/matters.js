@@ -8,7 +8,7 @@ import {
   findOrCreateClient, getMatterFields, upsertMatterField, confirmMatterField,
   assessCompleteness, listTemplates, getMatterTimeline, listUsers, logEvent,
 } from '../lib/store.js';
-import { resolveContext, ok, bad, readBody } from '../lib/context.js';
+import { requireContext, ok, bad, readBody } from '../lib/context.js';
 
 // Fields every matter needs regardless of document type. Template required
 // fields are unioned on top of these when a specific document is generated.
@@ -33,12 +33,8 @@ async function requiredFor(firmId, matter) {
 }
 
 export default async function handler(req, res) {
-  let ctx;
-  try {
-    ctx = await resolveContext();
-  } catch (err) {
-    return bad(res, err.message, 500);
-  }
+  const ctx = await requireContext(req, res);
+  if (!ctx) return;
 
   try {
     // ---------------- GET ----------------

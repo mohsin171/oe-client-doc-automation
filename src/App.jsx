@@ -1,61 +1,113 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
+import Login from './views/Login.jsx';
 import Queue from './views/Queue.jsx';
 import Matter from './views/Matter.jsx';
 import Review from './views/Review.jsx';
 import Templates from './views/Templates.jsx';
+import Team from './views/Team.jsx';
 
 export default function App() {
+  const [session, setSession] = useState({ loading: true });
   const [tab, setTab] = useState('queue');
   const [matterId, setMatterId] = useState(null);
   const [documentId, setDocumentId] = useState(null);
   const [showNew, setShowNew] = useState(false);
-  const [health, setHealth] = useState(null);
 
-  useEffect(() => { api.health().then(setHealth).catch(() => {}); }, []);
+  const loadSession = useCallback(() => {
+    api.session()
+      .then((d) => setSession({ loading: false, ...d }))
+      .catch((e) => setSession({ loading: false, signedIn: false, error: e.message }));
+  }, []);
+
+  useEffect(() => { loadSession(); }, [loadSession]);
+
+  // Any route can expire mid-session. When that happens, drop straight back to
+  // the sign-in screen rather than showing a broken view.
+  useEffect(() => {
+    const onUnauthorised = () => setSession((s) => ({ ...s, signedIn: false }));
+    window.addEventListener('oe-unauthenticated', onUnauthorised);
+    return () => window.removeEventListener('oe-unauthenticated', onUnauthorised);
+  }, []);
 
   function openMatter(id) { setDocumentId(null); setMatterId(id); }
-  function openDocument(id) { setDocumentId(id); }
   function backToQueue() { setMatterId(null); setDocumentId(null); }
+
+  async function signOut() {
+    try { await api.logout(); } catch (_) { /* cookie is cleared regardless */ }
+    backToQueue();
+    setSession({ loading: false, signedIn: false });
+  }
+
+  if (session.loading) {
+    return <div className="wrap"><p className="muted">Loading…</p></div>;
+  }
+
+  if (!session.signedIn) {
+    return <Login status={session} onSignedIn={loadSession} />;
+  }
+
+  const isOwner = session.user?.role === 'owner';
 
   let view;
   if (documentId) {
     view = <Review documentId={documentId} onBack={() => setDocumentId(null)} />;
   } else if (matterId) {
-    view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={openDocument} />;
+    view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={setDocumentId} />;
   } else if (tab === 'templates') {
     view = <Templates />;
+  } else if (tab === 'team') {
+    view = <Team />;
   } else {
     view = <Queue onOpenMatter={openMatter} onNewMatter={() => setShowNew(true)} />;
   }
+
+  const onQueue = !matterId && !documentId;
 
   return (
     <div className="wrap wide">
       <header className="app-head">
         <div>
-          <p className="eyebrow">Orca Edge &middot; Tool 2</p>
+          <p className="eyebrow">{session.firm?.name}</p>
           <h1 className="app-title">Document Engine</h1>
         </div>
-        <nav className="tabs">
-          <button
-            className={!matterId && !documentId && tab === 'queue' ? 'tab active' : 'tab'}
-            onClick={() => { backToQueue(); setTab('queue'); }}
-          >
-            Queue
-          </button>
-          <button
-            className={!matterId && !documentId && tab === 'templates' ? 'tab active' : 'tab'}
-            onClick={() => { backToQueue(); setTab('templates'); }}
-          >
-            Templates
-          </button>
-        </nav>
+
+        <div className="head-right">
+          <nav className="tabs">
+            <button
+              className={onQueue && tab === 'queue' ? 'tab active' : 'tab'}
+              onClick={() => { backToQueue(); setTab('queue'); }}
+            >
+              Queue
+            </button>
+            <button
+              className={onQueue && tab === 'templates' ? 'tab active' : 'tab'}
+              onClick={() => { backToQueue(); setTab('templates'); }}
+            >
+              Templates
+            </button>
+            {isOwner && (
+              <button
+                className={onQueue && tab === 'team' ? 'tab active' : 'tab'}
+                onClick={() => { backToQueue(); setTab('team'); }}
+              >
+                Team
+              </button>
+            )}
+          </nav>
+
+          <div className="who">
+            <span className="who-name">{session.user.name}</span>
+            <span className="who-role">{session.user.role}</span>
+            <button className="btn-tiny ghost" onClick={signOut}>Sign out</button>
+          </div>
+        </div>
       </header>
 
-      {health && !health.checks?.sessionSecretSet && (
+      {session.emailConfigured === false && isOwner && (
         <div className="banner">
-          Login is not built yet, so every request acts as the firm owner. Set
-          SESSION_SECRET and build authentication before any real client data goes in.
+          Email is not connected, so sign-in codes are written to the server log
+          rather than sent. Add RESEND_API_KEY before inviting anyone.
         </div>
       )}
 

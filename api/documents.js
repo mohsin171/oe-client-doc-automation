@@ -12,7 +12,7 @@ import {
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
 import { generate } from '../lib/engine.js';
-import { resolveContext, canApprove, ok, bad, readBody } from '../lib/context.js';
+import { requireContext, canApprove, ok, bad, readBody } from '../lib/context.js';
 
 function valuesFrom(fields) {
   const out = {};
@@ -21,12 +21,8 @@ function valuesFrom(fields) {
 }
 
 export default async function handler(req, res) {
-  let ctx;
-  try {
-    ctx = await resolveContext();
-  } catch (err) {
-    return bad(res, err.message, 500);
-  }
+  const ctx = await requireContext(req, res);
+  if (!ctx) return;
 
   try {
     // ---------------- GET ----------------

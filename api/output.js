@@ -8,15 +8,11 @@ import {
 } from 'docx';
 import { sql } from '../lib/db.js';
 import { getCurrentVersion, logEvent } from '../lib/store.js';
-import { resolveContext, bad } from '../lib/context.js';
+import { requireContext, bad } from '../lib/context.js';
 
 export default async function handler(req, res) {
-  let ctx;
-  try {
-    ctx = await resolveContext();
-  } catch (err) {
-    return bad(res, err.message, 500);
-  }
+  const ctx = await requireContext(req, res);
+  if (!ctx) return;
 
   try {
     const documentId = Number((req.query || {}).documentId);

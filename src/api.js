@@ -1,5 +1,6 @@
 async function req(url, options = {}) {
   const res = await fetch(url, {
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
@@ -9,6 +10,10 @@ async function req(url, options = {}) {
   if (!res.ok) {
     const err = new Error(data.error || 'Request failed');
     err.status = res.status;
+    err.code = data.code;
+    if (res.status === 401 && data.code === 'unauthenticated') {
+      window.dispatchEvent(new Event('oe-unauthenticated'));
+    }
     try { err.detail = JSON.parse(data.error); } catch (_) { err.detail = null; }
     throw err;
   }
@@ -17,6 +22,15 @@ async function req(url, options = {}) {
 
 export const api = {
   health: () => req('/api/health'),
+
+  session: () => req('/api/auth'),
+  requestCode: (body) => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'request_code', ...body }) }),
+  verifyCode: (body) => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'verify_code', ...body }) }),
+  logout: () => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) }),
+  team: () => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'team_list' }) }),
+  teamInvite: (body) => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'team_invite', ...body }) }),
+  teamRole: (body) => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'team_role', ...body }) }),
+  teamRevoke: (body) => req('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'team_revoke', ...body }) }),
 
   listMatters: () => req('/api/matters'),
   getMatter: (id, view) => req(`/api/matters?id=${id}${view ? `&view=${view}` : ''}`),

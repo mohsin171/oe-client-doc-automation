@@ -30,10 +30,29 @@ auto-approve path in this codebase, by design.
 - **Output.** Branded Word document. Approved versions only.
 - **Audit.** Full matter timeline and per document time logging for the value report.
 
+## Sign-in
+
+Invite only. There is no self-registration: a code is only sent to an address
+the firm owner has already invited, and the response is identical either way so
+the endpoint cannot be used to discover who works at the firm.
+
+- Six digit codes, generated with `crypto.randomInt`, hashed with HMAC-SHA256
+  peppered by `SESSION_SECRET` and bound to the user id before storage.
+- Single use, ten minute expiry, five wrong attempts then burned, and at most
+  three codes per address per fifteen minutes.
+- Issuing a new code invalidates any earlier unused one.
+- Sessions are opaque random ids held server side, carried in a signed
+  `HttpOnly; Secure; SameSite=Lax` cookie for seven days.
+- Roles are `owner`, `approver`, `drafter`. Only owner and approver can sign off,
+  and that is checked in the route, not in the interface.
+- Revoking someone deletes their sessions immediately rather than waiting for
+  the cookie to expire.
+
+Requires `SESSION_SECRET` and `RESEND_API_KEY`. Without Resend the code is
+written to the Vercel function log so sign-in stays recoverable.
+
 ## Not built yet
 
-- **Login.** `lib/context.js` resolves every request to the firm owner. Replace
-  `resolveContext()` before any real client data goes in. Needs `SESSION_SECRET`.
 - **Dictation.** Needs a transcription provider. Anthropic does not process audio.
 - **Sending.** Needs per firm domain verification. Download and compose works today.
 - **Amendment awareness, storage integration, value report screen.**

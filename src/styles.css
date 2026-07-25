@@ -252,3 +252,52 @@ footer p { color: var(--muted); font-size: 12.5px; line-height: 1.6; margin: 0; 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---------------- Sign in ---------------- */
+.login-shell {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 24px;
+}
+.login-card {
+  width: 100%; max-width: 400px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; padding: 32px;
+}
+.login-card .app-title { margin-bottom: 10px; }
+.login-sub { margin: 0 0 22px; line-height: 1.6; }
+.login-card .gap-input { margin: 0 0 16px; }
+.login-foot {
+  max-width: 400px; margin: 24px auto 0; color: var(--muted);
+  font-size: 12.5px; line-height: 1.6; text-align: center;
+}
+.notice {
+  background: rgba(69,146,220,0.09); border-left: 3px solid var(--bright);
+  padding: 10px 12px; border-radius: 4px; margin: 0 0 16px; line-height: 1.55;
+}
+.code-input {
+  font-size: 26px; letter-spacing: 11px; text-align: center;
+  font-family: ui-monospace, monospace; padding: 12px 11px;
+}
+
+/* ---------------- Header identity ---------------- */
+.head-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.who { display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.who-name { color: var(--light); font-weight: 600; }
+.who-role {
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 10.5px; font-weight: 700;
+}
+
+/* ---------------- Team ---------------- */
+.invite-grid { display: grid; grid-template-columns: 1fr 1fr 150px; gap: 12px; }
+.invite-grid .gap-input { margin: 0; }
+select, .role-select {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--light);
+  padding: 8px 10px; border-radius: 6px;
+}
+.role-select { padding: 5px 8px; font-size: 12.5px; }
+.list-row.revoked { opacity: 0.45; }
+
+@media (max-width: 700px) {
+  .invite-grid { grid-template-columns: 1fr; }
+  .head-right { align-items: flex-start; }
+}
