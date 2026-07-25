@@ -23,7 +23,7 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
   if (state.loading) return <p className="muted">Loading…</p>;
   if (state.error) return <div className="notice err">{state.error}</div>;
 
-  const { matter, fields = [], completeness = {}, templates = [], timeline = [] } = state;
+  const { matter, fields = [], completeness = {}, templates = [], timeline = [], users = [], gaps = [] } = state;
   const missing = completeness.missing || [];
   const unconfirmed = completeness.unconfirmedNumbers || [];
 
@@ -104,16 +104,52 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
           {missing.length > 0 && (
             <div className="gaps">
               <div className="box-title">{missing.length} still needed from you</div>
-              {missing.map((k) => (
-                <label className="field" key={k}>
-                  <span>{LABEL(k)}</span>
-                  <input
-                    value={draft[k] || ''}
-                    onChange={(e) => setDraft({ ...draft, [k]: e.target.value })}
-                    placeholder={`Enter ${LABEL(k).toLowerCase()}`}
-                  />
-                </label>
-              ))}
+              <div className="field-grid">
+                {missing.map((k) => {
+                  const meta = gaps.find((g) => g.key === k) || { key: k, label: LABEL(k), type: 'text' };
+                  const val = draft[k] || '';
+                  const on = (e) => setDraft({ ...draft, [k]: e.target.value });
+                  let input;
+
+                  if (meta.type === 'user') {
+                    input = (
+                      <select value={val} onChange={on}>
+                        <option value="">Choose…</option>
+                        {users.map((u) => <option key={u.id} value={u.name}>{u.name}</option>)}
+                      </select>
+                    );
+                  } else if (meta.type === 'select') {
+                    input = (
+                      <select value={val} onChange={on}>
+                        <option value="">Choose…</option>
+                        {(meta.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    );
+                  } else if (meta.type === 'date') {
+                    input = <input type="date" value={val} onChange={on} />;
+                  } else if (meta.type === 'textarea') {
+                    input = <textarea rows={meta.rows || 3} value={val} onChange={on} />;
+                  } else if (meta.type === 'number') {
+                    input = (
+                      <div className="affixed">
+                        {meta.prefix && <span className="affix">{meta.prefix}</span>}
+                        <input type="text" inputMode="decimal" value={val} onChange={on} placeholder="0" />
+                        {meta.suffix && <span className="affix">{meta.suffix}</span>}
+                      </div>
+                    );
+                  } else {
+                    input = <input value={val} onChange={on} placeholder={`Enter ${meta.label.toLowerCase()}`} />;
+                  }
+
+                  return (
+                    <div className={meta.type === 'textarea' ? 'field span-2' : 'field'} key={k}>
+                      <label><span>{meta.label}</span></label>
+                      {input}
+                      {meta.hint && <span className="prov">{meta.hint}</span>}
+                    </div>
+                  );
+                })}
+              </div>
               <button
                 className="btn-primary"
                 disabled={busy === 'fields' || Object.keys(draft).length === 0}

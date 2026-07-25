@@ -96,8 +96,13 @@ export default async function handler(req, res) {
       const completeness = await assessCompleteness(matter.id, required);
       const templates = await listTemplates(ctx.firm_id);
       const timeline = view === 'full' ? await getMatterTimeline(ctx.firm_id, matter.id) : [];
+      const users = (await listUsers(ctx.firm_id)).filter((u) => u.active);
 
-      return ok(res, { matter, fields, required, completeness, templates, timeline });
+      // Describe each gap so it can be filled with the right control rather
+      // than a text box for everything.
+      const gaps = (completeness.missing || []).map((k) => fieldMeta(k));
+
+      return ok(res, { matter, fields, required, completeness, templates, timeline, users, gaps });
     }
 
     if (!['POST', 'PATCH'].includes(req.method)) return bad(res, 'Method not allowed', 405);
