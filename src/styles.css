@@ -541,3 +541,6 @@ textarea.tall { min-height: 230px; }
   background: var(--canvas); border: 1px solid var(--line);
   border-radius: 12px; padding: 24px 28px; max-height: 62vh; overflow-y: auto;
 }
+
+.btn.danger { border-color: #E6C3C0; color: var(--red); background: var(--red-bg); }
+.btn.danger:hover:not(:disabled) { border-color: var(--red); box-shadow: none; }

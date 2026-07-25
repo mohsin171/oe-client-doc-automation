@@ -150,6 +150,38 @@ export default async function handler(req, res) {
       return ok(res, { removed: rows[0].section_key, remaining: left[0]?.n || 0 });
     }
 
+    // Clearing everything is a different act from removing one document, so it
+    // asks for the number back as confirmation. A stray click cannot wipe a
+    // firm's corpus, but a deliberate one takes a single step.
+    if (action === 'clear_documents') {
+      if (!canManageTemplates(ctx.role)) {
+        return bad(res, 'Only the firm owner can clear documents', 403);
+      }
+
+      const scope = body.docType
+        ? await sql`SELECT count(*)::int AS n FROM precedents
+                    WHERE firm_id = ${ctx.firm_id} AND doc_type = ${body.docType}`
+        : await sql`SELECT count(*)::int AS n FROM precedents WHERE firm_id = ${ctx.firm_id}`;
+      const expected = scope[0]?.n || 0;
+
+      if (Number(body.confirmCount) !== expected) {
+        return bad(res, `That would remove ${expected} documents. Confirm the number to continue.`, 409);
+      }
+
+      const rows = body.docType
+        ? await sql`DELETE FROM precedents
+                    WHERE firm_id = ${ctx.firm_id} AND doc_type = ${body.docType} RETURNING id`
+        : await sql`DELETE FROM precedents WHERE firm_id = ${ctx.firm_id} RETURNING id`;
+
+      await logEvent({
+        firmId: ctx.firm_id, actorId: ctx.user_id,
+        kind: 'corpus_cleared',
+        payload: { removed: rows.length, docType: body.docType || 'all' },
+      });
+
+      return ok(res, { removed: rows.length });
+    }
+
     if (action === 'delete_template') {
       if (!canManageTemplates(ctx.role)) {
         return bad(res, 'Only the firm owner can remove a structure', 403);

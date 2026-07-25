@@ -45,6 +45,7 @@ export const api = {
   listCorpus: (docType = '') => req(`/api/templates?docType=${encodeURIComponent(docType)}`),
   readCorpusDoc: (corpusId) => req(`/api/templates?corpusId=${corpusId}`),
   deleteCorpusDoc: (corpusId) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'delete_document', corpusId }) }),
+  clearCorpus: (confirmCount, docType) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'clear_documents', confirmCount, docType }) }),
   deleteTemplate: (templateId) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'delete_template', templateId }) }),
 
   listDocuments: (matterId) => req(`/api/documents?matterId=${matterId}`),

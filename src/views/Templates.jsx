@@ -27,6 +27,7 @@ export default function Templates() {
   const [onFile, setOnFile] = useState([]);
   const [reading, setReading] = useState(null);
   const [confirming, setConfirming] = useState(null);
+  const [clearing, setClearing] = useState(false);
   const [docs, setDocs] = useState([]);
   const [hint, setHint] = useState('');
   const [result, setResult] = useState(null);
@@ -59,6 +60,16 @@ export default function Templates() {
       setConfirming(null);
       await load();
     } catch (e) { setError(e.message); }
+  }
+
+  async function clearAll() {
+    setBusy('clear'); setError(null);
+    try {
+      await api.clearCorpus(onFile.length);
+      setClearing(false);
+      await load();
+    } catch (e) { setError(e.message); }
+    setBusy(null);
   }
 
   async function removeTemplate(id) {
@@ -299,8 +310,28 @@ export default function Templates() {
                 on, so it is worth knowing exactly what is in here.
               </div>
             </div>
-            <span className="count">{onFile.length}</span>
+            <div className="row-side">
+              <span className="count">{onFile.length}</span>
+              {clearing ? (
+                <>
+                  <button className="btn btn-sm danger" disabled={busy === 'clear'} onClick={clearAll}>
+                    {busy === 'clear' ? 'Removing…' : `Yes, remove all ${onFile.length}`}
+                  </button>
+                  <button className="btn-ghost" onClick={() => setClearing(false)}>Cancel</button>
+                </>
+              ) : (
+                <button className="btn-ghost" onClick={() => setClearing(true)}>Remove all</button>
+              )}
+            </div>
           </div>
+
+          {clearing && (
+            <div className="notice warn">
+              This removes all {onFile.length} documents. Any structure derived from
+              them stays, but nothing will be grounded on the firm's own wording
+              until documents are uploaded again.
+            </div>
+          )}
 
           <div className="rows">
             {onFile.map((d) => (
