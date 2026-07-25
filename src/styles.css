@@ -482,3 +482,26 @@ textarea.tall { min-height: 230px; }
 @media (max-width: 640px) {
   .field-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------------- Notes capture ---------------- */
+.notes-box { border-color: rgba(69,146,220,0.28); }
+.narrative {
+  width: 100%; min-height: 200px; line-height: 1.7; font-size: 0.94rem;
+  padding: 16px 18px; border-radius: 12px; margin-bottom: 14px;
+}
+.narrative::placeholder { color: var(--faint); line-height: 1.7; }
+
+.from-notes {
+  display: inline-block; margin-left: 8px; font-style: normal;
+  font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--bright); background: var(--light);
+  padding: 2px 7px; border-radius: 999px; font-weight: 800;
+}
+.quote {
+  display: block; margin-top: 6px; padding-left: 10px;
+  border-left: 2px solid var(--bright); color: var(--muted);
+  font-size: 0.78rem; font-style: italic; line-height: 1.5;
+}
+.unstated {
+  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--line);
+}

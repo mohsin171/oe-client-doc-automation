@@ -34,6 +34,7 @@ export const api = {
 
   listMatters: () => req('/api/matters'),
   matterForm: () => req('/api/matters?view=form'),
+  extractNotes: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'extract', ...body }) }),
   getMatter: (id, view) => req(`/api/matters?id=${id}${view ? `&view=${view}` : ''}`),
   createMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'create', ...body }) }),
   saveFields: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'fields', ...body }) }),

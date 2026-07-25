@@ -10,7 +10,8 @@ import {
 } from '../lib/store.js';
 import { sql } from '../lib/db.js';
 import { requireContext, ok, bad, readBody } from '../lib/context.js';
-import { buildFormSchema, fieldMeta } from '../lib/fields.js';
+import { buildFormSchema, splitSchema, fieldMeta } from '../lib/fields.js';
+import { extractFromNarrative } from '../lib/extract.js';
 
 // Fields every matter needs regardless of document type. Template required
 // fields are unioned on top of these when a specific document is generated.
@@ -52,8 +53,12 @@ export default async function handler(req, res) {
           SELECT id, legal_name, email, address, company_no
           FROM clients WHERE firm_id = ${ctx.firm_id}
           ORDER BY legal_name LIMIT 200`;
+        const schema = buildFormSchema(templates, CORE_FIELDS);
+        const split = splitSchema(schema);
         return ok(res, {
-          schema: buildFormSchema(templates, CORE_FIELDS),
+          schema,
+          typed: split.typed,
+          extracted: split.extracted,
           templates: templates.map((t) => ({ id: t.id, name: t.name, doc_type: t.doc_type })),
           users: users.filter((u) => u.active),
           clients,
@@ -116,25 +121,39 @@ export default async function handler(req, res) {
         assignedUserId: body.assignedUserId || ctx.user_id,
       });
 
-      // Everything the person typed, with provenance. Rule one is enforced in
-      // the store: an empty value is not written at all, so a gap stays a gap
-      // rather than becoming a blank that looks answered.
+      // The fee earner's own account, kept whole. The structured fields are
+      // derived from it, but the account is what a person would want to read
+      // in two years when asking why the letter said what it said.
+      if (String(body.narrative || '').trim()) {
+        await sql`
+          INSERT INTO captures (matter_id, user_id, kind, transcript, extracted)
+          VALUES (${matter.id}, ${ctx.user_id}, 'notes', ${body.narrative},
+                  ${JSON.stringify(body.provenance || {})})`;
+      }
+
+      // Rule one is enforced in the store: an empty value is never written, so
+      // a gap stays a gap rather than becoming a blank that looks answered.
+      const provenance = body.provenance || {};
       for (const [key, value] of Object.entries(values)) {
         const meta = fieldMeta(key);
+        const fromNotes = Boolean(provenance[key]);
+        const isNum = meta.numeric || looksNumeric(key, value);
+
         await upsertMatterField(matter.id, {
           key,
           value,
-          source: 'form',
-          provenance: 'Entered on the matter opening form',
-          confidence: 1,
-          isNumeric: meta.numeric || looksNumeric(key, value),
+          source: fromNotes ? 'dictation' : 'form',
+          provenance: fromNotes
+            ? `From your notes: "${String(provenance[key]).slice(0, 200)}"`
+            : 'Typed on the client details page',
+          confidence: fromNotes ? 0.8 : 1,
+          isNumeric: isNum,
         });
-        // A figure a person typed on this form is confirmed by that act. A
-        // figure arriving from dictation later will not be.
-        if (meta.numeric || looksNumeric(key, value)) {
-          if (String(value ?? '').trim() !== '') {
-            await confirmMatterField(matter.id, key, ctx.user_id);
-          }
+
+        // Typing a figure confirms it. A figure the system read out of the
+        // notes does not get that for free, whatever it looked like.
+        if (isNum && !fromNotes && String(value ?? '').trim() !== '') {
+          await confirmMatterField(matter.id, key, ctx.user_id);
         }
       }
 
@@ -148,6 +167,27 @@ export default async function handler(req, res) {
       if (completeness.canGenerate) await setMatterStatus(ctx.firm_id, matter.id, 'open');
 
       return ok(res, { matter, completeness });
+    }
+
+    // ---------------- Read the fee earner's notes ----------------
+    // A preview. Nothing is written, because a person confirms first.
+    if (body.action === 'extract') {
+      const templates = await listTemplates(ctx.firm_id);
+      const { extracted } = splitSchema(buildFormSchema(templates, CORE_FIELDS));
+
+      const result = await extractFromNarrative({
+        narrative: body.narrative,
+        fields: extracted,
+        knownValues: body.values || {},
+        firmName: ctx.firm_name,
+      });
+
+      if (!result.ok) {
+        return bad(res, result.reason === 'too_short'
+          ? 'Write a little more about the call first.'
+          : 'Could not read those notes. Try rephrasing them.', 422);
+      }
+      return ok(res, result);
     }
 
     // ---------------- Capture or correct fields ----------------
