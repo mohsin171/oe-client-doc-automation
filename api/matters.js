@@ -39,8 +39,11 @@ function looksNumeric(key, value) {
 async function requiredFor(firmId, matter) {
   const templates = await listTemplates(firmId);
   const set = new Set(REQUIRED_TO_OPEN);
+  // An earlier version skipped templates whose doc_type did not equal the
+  // matter_type. Those are different things: one is a kind of document, the
+  // other an area of law, so nothing ever matched and the page reported a
+  // record complete without having checked it. Every active template counts.
   for (const t of templates) {
-    if (matter && t.doc_type && matter.matter_type && t.doc_type !== matter.matter_type) continue;
     for (const f of (t.definition?.requiredFields || [])) {
       const k = canonicalKey(f);
       if (!isSystemField(k)) set.add(k);
