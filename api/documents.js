@@ -26,13 +26,35 @@ function salutationFor(name) {
   const n = String(name || '').trim();
   if (!n) return '';
   if (/\b(limited|ltd|llp|plc)\b/i.test(n)) return 'Sirs';
-  const parts = n.split(/\s+/);
-  const titles = ['mr', 'mrs', 'ms', 'miss', 'dr', 'professor'];
-  if (parts.length > 1 && titles.includes(parts[0].toLowerCase())) {
-    return `${parts[0]} ${parts[parts.length - 1]}`;
+
+  const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+  const parts = n.split(/\s+/).filter(Boolean);
+  const titles = ['mr', 'mrs', 'ms', 'miss', 'dr', 'professor', 'prof'];
+
+  if (/^mr and mrs/i.test(n)) return `Mr and Mrs ${cap(parts[parts.length - 1])}`;
+
+  if (parts.length > 1 && titles.includes(parts[0].toLowerCase().replace('.', ''))) {
+    return `${cap(parts[0].replace('.', ''))} ${cap(parts[parts.length - 1])}`;
   }
-  if (/^mr and mrs/i.test(n)) return `Mr and Mrs ${parts[parts.length - 1]}`;
-  return parts[parts.length - 1];
+
+  // No title given, so guessing one means guessing at gender or marital status.
+  // Using the full name is the safe and conventional choice.
+  return parts.map(cap).join(' ');
+}
+
+// A subject line goes to the client. Notes written for the file often carry
+// framing that should never appear on a letter, so take the first clause and
+// drop anything that reads as an internal aside.
+function subjectFrom(scope, matterType) {
+  const raw = String(scope || '').trim();
+  if (!raw) return matterType ? matterType.charAt(0).toUpperCase() + matterType.slice(1) : '';
+
+  const first = raw.split(/[.;]/)[0].trim();
+  const internal = /\b(client (does not|doesn't|is clear|wants|asked|confirmed)|we (are not|will not be) involved|not involved|firm involved|per (the )?notes|internal)\b/i;
+  if (internal.test(first) || first.length < 4) {
+    return matterType ? matterType.charAt(0).toUpperCase() + matterType.slice(1) : '';
+  }
+  return first.slice(0, 90);
 }
 
 // Everything the system already knows. Asking a person for the reference it
@@ -49,9 +71,7 @@ function systemValues({ matter, ctx, values }) {
     firm_name: branding.letterhead || ctx.firm_name || '',
     firm_address: branding.address || '',
     fee_earner_title: ctx.title || '',
-    matter_subject: values.scope_summary
-      ? String(values.scope_summary).split(/[.;]/)[0].slice(0, 90)
-      : (matter.matter_type || ''),
+    matter_subject: subjectFrom(values.scope_summary, matter.matter_type),
   };
 }
 

@@ -40,8 +40,15 @@ export default async function handler(req, res) {
 
     const children = [];
 
+    // A firm's letterhead usually appears in every letter they issue, so it is
+    // correctly detected as a standard clause and lives in the document body.
+    // Adding our own on top prints it twice.
+    const firmLabel = (branding.letterhead || ctx.firm_name || '').toLowerCase();
+    const bodyText = (version.blocks || []).map((b) => (b.body || '')).join(' ').toLowerCase();
+    const letterheadInBody = firmLabel.length > 3 && bodyText.includes(firmLabel);
+
     // Letterhead
-    children.push(new Paragraph({
+    if (!letterheadInBody) children.push(new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 60 },
       children: [new TextRun({
@@ -50,7 +57,7 @@ export default async function handler(req, res) {
       })],
     }));
 
-    if (branding.address) {
+    if (branding.address && !letterheadInBody) {
       children.push(new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 240 },
@@ -59,20 +66,24 @@ export default async function handler(req, res) {
       }));
     }
 
-    // Reference and date
-    children.push(new Paragraph({
-      spacing: { after: 60 },
-      children: [new TextRun({
-        text: `Our reference: ${document.reference}`, font: bodyFont, size: 18, color: '555555',
-      })],
-    }));
-    children.push(new Paragraph({
-      spacing: { after: 300 },
-      children: [new TextRun({
-        text: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-        font: bodyFont, size: 18, color: '555555',
-      })],
-    }));
+    // Same for the reference and date: if the template already places them,
+    // printing them again is noise.
+    const refInBody = bodyText.includes(String(document.reference).toLowerCase());
+    if (!refInBody) {
+      children.push(new Paragraph({
+        spacing: { after: 60 },
+        children: [new TextRun({
+          text: `Our reference: ${document.reference}`, font: bodyFont, size: 18, color: '555555',
+        })],
+      }));
+      children.push(new Paragraph({
+        spacing: { after: 300 },
+        children: [new TextRun({
+          text: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+          font: bodyFont, size: 18, color: '555555',
+        })],
+      }));
+    }
 
     // Body blocks, in template order
     for (const block of version.blocks || []) {
