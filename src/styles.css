@@ -531,3 +531,13 @@ textarea.tall { min-height: 230px; }
 .filerow:last-child { border-bottom: none; }
 .fname { flex: 1; color: var(--ink); font-weight: 600; word-break: break-all; }
 .fsize { color: var(--faint); font-size: 0.76rem; white-space: nowrap; }
+
+/* ---------------- Document reader ---------------- */
+.modal.reader { max-width: 820px; }
+.modal.reader .modal-head { align-items: center; }
+.doc-text {
+  white-space: pre-wrap; font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.9rem; line-height: 1.75; color: var(--ink);
+  background: var(--canvas); border: 1px solid var(--line);
+  border-radius: 12px; padding: 24px 28px; max-height: 62vh; overflow-y: auto;
+}

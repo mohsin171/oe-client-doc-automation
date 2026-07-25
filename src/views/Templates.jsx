@@ -24,6 +24,9 @@ async function readFile(file) {
 export default function Templates() {
   const [templates, setTemplates] = useState([]);
   const [corpus, setCorpus] = useState([]);
+  const [onFile, setOnFile] = useState([]);
+  const [reading, setReading] = useState(null);
+  const [confirming, setConfirming] = useState(null);
   const [docs, setDocs] = useState([]);
   const [hint, setHint] = useState('');
   const [result, setResult] = useState(null);
@@ -37,6 +40,32 @@ export default function Templates() {
       const d = await api.listTemplates();
       setTemplates(d.templates || []);
       setCorpus(d.corpus || []);
+      const f = await api.listCorpus('');
+      setOnFile(f.documents || []);
+    } catch (e) { setError(e.message); }
+  }
+
+  async function openDoc(id) {
+    setReading({ id, loading: true });
+    try {
+      const d = await api.readCorpusDoc(id);
+      setReading({ id, doc: d.document });
+    } catch (e) { setReading(null); setError(e.message); }
+  }
+
+  async function removeDoc(id) {
+    try {
+      await api.deleteCorpusDoc(id);
+      setConfirming(null);
+      await load();
+    } catch (e) { setError(e.message); }
+  }
+
+  async function removeTemplate(id) {
+    try {
+      await api.deleteTemplate(id);
+      setConfirming(null);
+      await load();
     } catch (e) { setError(e.message); }
   }
   useEffect(() => { load(); }, []);
@@ -260,6 +289,59 @@ export default function Templates() {
         </div>
       )}
 
+      {onFile.length > 0 && (
+        <div className="section">
+          <div className="section-head">
+            <div>
+              <div className="section-title">Documents on file</div>
+              <div className="section-hint">
+                Everything you have handed over. These are what drafting is grounded
+                on, so it is worth knowing exactly what is in here.
+              </div>
+            </div>
+            <span className="count">{onFile.length}</span>
+          </div>
+
+          <div className="rows">
+            {onFile.map((d) => (
+              <div className="row" key={d.id}>
+                <div className="row-main">
+                  <strong>{String(d.section_key || '').replace(/^corpus:/, '')}</strong>
+                  <span className="row-sub">
+                    {d.doc_type.replace(/_/g, ' ')} · {Math.round(d.chars / 1000)}k characters
+                    {' · '}{new Date(d.created_at).toLocaleDateString('en-GB')}
+                  </span>
+                </div>
+                <div className="row-side">
+                  <button className="btn btn-sm" onClick={() => openDoc(d.id)}>Read</button>
+                  {confirming === `doc-${d.id}` ? (
+                    <>
+                      <button className="btn btn-sm" onClick={() => removeDoc(d.id)}>Confirm</button>
+                      <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
+                    </>
+                  ) : (
+                    <button className="btn-ghost" onClick={() => setConfirming(`doc-${d.id}`)}>Remove</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reading && (
+        <div className="modal-scrim" onClick={() => setReading(null)}>
+          <div className="modal reader" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h2>{String(reading.doc?.section_key || '').replace(/^corpus:/, '') || 'Document'}</h2>
+              <button className="btn btn-sm" onClick={() => setReading(null)}>Close</button>
+            </div>
+            {reading.loading && <p className="muted">Loading…</p>}
+            {reading.doc && <pre className="doc-text">{reading.doc.body}</pre>}
+          </div>
+        </div>
+      )}
+
       <div className="section">
         <div className="section-head">
           <div className="section-title">What we have learned</div>
@@ -284,6 +366,14 @@ export default function Templates() {
                   <div className="row-side">
                     {c && <span className="chip">{c.n} on file</span>}
                     <span className="chip">{t.summary.blocking} blocking</span>
+                    {confirming === `tpl-${t.id}` ? (
+                      <>
+                        <button className="btn btn-sm" onClick={() => removeTemplate(t.id)}>Confirm</button>
+                        <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
+                      </>
+                    ) : (
+                      <button className="btn-ghost" onClick={() => setConfirming(`tpl-${t.id}`)}>Remove</button>
+                    )}
                   </div>
                 </div>
               );

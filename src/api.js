@@ -42,6 +42,10 @@ export const api = {
   listTemplates: () => req('/api/templates'),
   analyseTemplate: (body) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'analyse', ...body }) }),
   saveTemplate: (body) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'save', ...body }) }),
+  listCorpus: (docType = '') => req(`/api/templates?docType=${encodeURIComponent(docType)}`),
+  readCorpusDoc: (corpusId) => req(`/api/templates?corpusId=${corpusId}`),
+  deleteCorpusDoc: (corpusId) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'delete_document', corpusId }) }),
+  deleteTemplate: (templateId) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'delete_template', templateId }) }),
 
   listDocuments: (matterId) => req(`/api/documents?matterId=${matterId}`),
   getDocument: (id) => req(`/api/documents?id=${id}`),

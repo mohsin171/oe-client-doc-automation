@@ -10,7 +10,31 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const { id } = req.query || {};
+      const { id, corpusId, docType } = req.query || {};
+
+      // Read one document in full.
+      if (corpusId) {
+        const rows = await sql`
+          SELECT id, doc_type, section_key, body, created_at
+          FROM precedents WHERE firm_id = ${ctx.firm_id} AND id = ${Number(corpusId)} LIMIT 1`;
+        if (!rows[0]) return bad(res, 'Document not found', 404);
+        return ok(res, { document: rows[0] });
+      }
+
+      // Everything on file, newest first, without hauling the full text over.
+      if (docType !== undefined) {
+        const rows = docType
+          ? await sql`
+              SELECT id, doc_type, section_key, length(body) AS chars, created_at
+              FROM precedents WHERE firm_id = ${ctx.firm_id} AND doc_type = ${docType}
+              ORDER BY created_at DESC, id DESC`
+          : await sql`
+              SELECT id, doc_type, section_key, length(body) AS chars, created_at
+              FROM precedents WHERE firm_id = ${ctx.firm_id}
+              ORDER BY created_at DESC, id DESC`;
+        return ok(res, { documents: rows });
+      }
+
       if (id) {
         const t = await getTemplate(ctx.firm_id, Number(id));
         if (!t) return bad(res, 'Template not found', 404);
@@ -100,6 +124,45 @@ export default async function handler(req, res) {
       });
 
       return ok(res, { template: rows[0], stored });
+    }
+
+    if (action === 'delete_document') {
+      if (!canManageTemplates(ctx.role)) {
+        return bad(res, 'Only the firm owner can remove documents', 403);
+      }
+      const rows = await sql`
+        DELETE FROM precedents
+        WHERE firm_id = ${ctx.firm_id} AND id = ${Number(body.corpusId)}
+        RETURNING section_key, doc_type`;
+      if (!rows[0]) return bad(res, 'Document not found', 404);
+
+      await logEvent({
+        firmId: ctx.firm_id, actorId: ctx.user_id,
+        kind: 'corpus_document_removed',
+        payload: { name: rows[0].section_key, docType: rows[0].doc_type },
+      });
+
+      // Removing a document changes what the corpus proves, so say so plainly
+      // rather than letting the derived structure quietly go stale.
+      const left = await sql`
+        SELECT count(*)::int AS n FROM precedents
+        WHERE firm_id = ${ctx.firm_id} AND doc_type = ${rows[0].doc_type}`;
+      return ok(res, { removed: rows[0].section_key, remaining: left[0]?.n || 0 });
+    }
+
+    if (action === 'delete_template') {
+      if (!canManageTemplates(ctx.role)) {
+        return bad(res, 'Only the firm owner can remove a structure', 403);
+      }
+      const rows = await sql`
+        DELETE FROM templates WHERE firm_id = ${ctx.firm_id} AND id = ${Number(body.templateId)}
+        RETURNING name`;
+      if (!rows[0]) return bad(res, 'Not found', 404);
+      await logEvent({
+        firmId: ctx.firm_id, actorId: ctx.user_id,
+        kind: 'template_removed', payload: { name: rows[0].name },
+      });
+      return ok(res, { removed: rows[0].name });
     }
 
     return bad(res, 'Unknown action');
