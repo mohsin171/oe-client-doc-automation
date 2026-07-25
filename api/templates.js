@@ -102,11 +102,21 @@ export default async function handler(req, res) {
       // Keep every uploaded document. The structure is only half of what they
       // are worth: the pile itself is what later drafting is grounded on, so
       // the output reads like this firm rather than like generic legal prose.
+      // Re-analysing a corpus is normal: the structure gets better, the
+      // documents do not change. Storing them again would double the pile and
+      // skew the counting that the whole approach rests on.
       let stored = 0;
+      let alreadyHeld = 0;
       for (const d of (body.documents || [])) {
         const text = String(d?.text || '').trim();
         if (text.length < 120) continue;
         const key = `corpus:${String(d.name || 'upload').slice(0, 80)}`;
+
+        const existing = await sql`
+          SELECT id FROM precedents
+          WHERE firm_id = ${ctx.firm_id} AND section_key = ${key} LIMIT 1`;
+        if (existing[0]) { alreadyHeld += 1; continue; }
+
         await sql`
           INSERT INTO precedents (firm_id, doc_type, section_key, body)
           VALUES (${ctx.firm_id}, ${def.docType || 'document'}, ${key}, ${text})`;
@@ -119,11 +129,11 @@ export default async function handler(req, res) {
         kind: 'template_created',
         payload: {
           templateId: rows[0].id, name: rows[0].name,
-          summary: summarise(def), documentsStored: stored,
+          summary: summarise(def), documentsStored: stored, alreadyHeld,
         },
       });
 
-      return ok(res, { template: rows[0], stored });
+      return ok(res, { template: rows[0], stored, alreadyHeld });
     }
 
     if (action === 'delete_document') {
