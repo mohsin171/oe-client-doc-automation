@@ -28,6 +28,14 @@ const CORE_FIELDS = [
 // Of those, only these two are genuinely required to open a file.
 const REQUIRED_TO_OPEN = ['client_legal_name', 'matter_type'];
 
+// Facts a file benefits from whether or not a template asks for them. Offered,
+// never demanded, so a missing one can never block a letter.
+const SUGGESTED_FIELDS = [
+  'fee_estimate', 'hours_estimate', 'fee_cap', 'disbursements',
+  'engagement_date', 'completion_date', 'key_dates', 'exclusions',
+  'supervisor_name', 'other_party',
+];
+
 // Anything that looks like money, a rate, or a count is treated as numeric and
 // always requires explicit confirmation. Dictation mishears figures, and sixty
 // against sixteen in a fee clause ends a client relationship.
@@ -105,7 +113,17 @@ export default async function handler(req, res) {
       // than a text box for everything.
       const gaps = (completeness.missing || []).map((k) => fieldMeta(k));
 
-      return ok(res, { matter, fields, required, completeness, templates, timeline, users, gaps });
+      // Anything already held, required, or offered above is not offered again.
+      const held = new Set(fields.map((f) => canonicalKey(f.key)));
+      const shown = new Set([...held, ...(completeness.missing || []).map(canonicalKey)]);
+      const suggestions = SUGGESTED_FIELDS
+        .map(canonicalKey)
+        .filter((k) => !shown.has(k))
+        .map((k) => fieldMeta(k));
+
+      return ok(res, {
+        matter, fields, required, completeness, templates, timeline, users, gaps, suggestions,
+      });
     }
 
     if (!['POST', 'PATCH'].includes(req.method)) return bad(res, 'Method not allowed', 405);
@@ -230,7 +248,8 @@ export default async function handler(req, res) {
       const matter = await getMatter(ctx.firm_id, matterId);
       if (!matter) return bad(res, 'Matter not found', 404);
 
-      for (const [key, value] of Object.entries(body.values || {})) {
+      for (const [rawKey, value] of Object.entries(body.values || {})) {
+        const key = canonicalKey(rawKey);
         // Rule one. An empty value is not a value. It is not written, and the
         // field stays missing so the gate keeps blocking.
         if (value === null || value === undefined || String(value).trim() === '') continue;

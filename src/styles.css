@@ -544,3 +544,7 @@ textarea.tall { min-height: 230px; }
 
 .btn.danger { border-color: #E6C3C0; color: var(--red); background: var(--red-bg); }
 .btn.danger:hover:not(:disabled) { border-color: var(--red); box-shadow: none; }
+
+.optional-facts { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.optional-facts .box-title { margin-bottom: 6px; }
+.optional-facts .prov { margin-bottom: 14px; }

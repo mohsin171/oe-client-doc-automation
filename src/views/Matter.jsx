@@ -7,6 +7,8 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
   const [state, setState] = useState({ loading: true });
   const [documents, setDocuments] = useState([]);
   const [draft, setDraft] = useState({});
+  const [extra, setExtra] = useState({});
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
 
@@ -23,7 +25,10 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
   if (state.loading) return <p className="muted">Loading…</p>;
   if (state.error) return <div className="notice err">{state.error}</div>;
 
-  const { matter, fields = [], completeness = {}, templates = [], timeline = [], users = [], gaps = [] } = state;
+  const {
+    matter, fields = [], completeness = {}, templates = [], timeline = [],
+    users = [], gaps = [], suggestions = [],
+  } = state;
   const missing = completeness.missing || [];
   const unconfirmed = completeness.unconfirmedNumbers || [];
 
@@ -32,6 +37,17 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
     try {
       await api.saveFields({ matterId, values: draft, source: 'manual_fix' });
       setDraft({});
+      await load();
+    } catch (e) { setError(e.message); }
+    setBusy(null);
+  }
+
+  async function saveExtra() {
+    setBusy('extra'); setError(null);
+    try {
+      await api.saveFields({ matterId, values: extra, source: 'manual_fix' });
+      setExtra({});
+      setAdding(false);
       await load();
     } catch (e) { setError(e.message); }
     setBusy(null);
@@ -164,6 +180,84 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
             <p className="muted" style={{ marginTop: 14 }}>
               Figures always need confirming before generation, whatever the source.
             </p>
+          )}
+
+          {/* A record is not only what a document demands. An estimate matters
+              even when the fee paragraph is prose rather than a merge line. */}
+          {suggestions.length > 0 && (
+            <div className="optional-facts">
+              {!adding ? (
+                <button className="link-btn" onClick={() => setAdding(true)}>
+                  Add something else to this file
+                </button>
+              ) : (
+                <>
+                  <div className="box-title">Anything else worth recording</div>
+                  <p className="prov">
+                    None of these are required, and leaving one blank will never block
+                    a document. They are here because a file is worth more than the
+                    minimum a template happens to ask for.
+                  </p>
+                  <div className="field-grid">
+                    {suggestions.map((meta) => {
+                      const val = extra[meta.key] || '';
+                      const on = (e) => setExtra({ ...extra, [meta.key]: e.target.value });
+                      let input;
+
+                      if (meta.type === 'user') {
+                        input = (
+                          <select value={val} onChange={on}>
+                            <option value="">Choose…</option>
+                            {users.map((u) => <option key={u.id} value={u.name}>{u.name}</option>)}
+                          </select>
+                        );
+                      } else if (meta.type === 'select') {
+                        input = (
+                          <select value={val} onChange={on}>
+                            <option value="">Choose…</option>
+                            {(meta.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        );
+                      } else if (meta.type === 'date') {
+                        input = <input type="date" value={val} onChange={on} />;
+                      } else if (meta.type === 'textarea') {
+                        input = <textarea rows={meta.rows || 2} value={val} onChange={on} />;
+                      } else if (meta.type === 'number') {
+                        input = (
+                          <div className="affixed">
+                            {meta.prefix && <span className="affix">{meta.prefix}</span>}
+                            <input type="text" inputMode="decimal" value={val} onChange={on} placeholder="0" />
+                            {meta.suffix && <span className="affix">{meta.suffix}</span>}
+                          </div>
+                        );
+                      } else {
+                        input = <input value={val} onChange={on} />;
+                      }
+
+                      return (
+                        <div className={meta.type === 'textarea' ? 'field span-2' : 'field'} key={meta.key}>
+                          <label><span>{meta.label}</span></label>
+                          {input}
+                          {meta.hint && <span className="prov">{meta.hint}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="btn-row">
+                    <button
+                      className="btn-primary"
+                      disabled={busy === 'extra' || Object.values(extra).every((v) => !String(v).trim())}
+                      onClick={saveExtra}
+                    >
+                      {busy === 'extra' ? 'Saving…' : 'Save'}
+                    </button>
+                    <button className="btn-ghost" onClick={() => { setAdding(false); setExtra({}); }}>
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>
