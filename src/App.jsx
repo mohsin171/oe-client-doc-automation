@@ -1,89 +1,145 @@
 import React, { useEffect, useState } from 'react';
-
-const STEPS = [
-  { key: 'deployed',         label: 'Deployed on Vercel',      hint: 'If you can read this, this one is done.' },
-  { key: 'databaseUrlSet',   label: 'DATABASE_URL set',        hint: 'Neon pooled connection string, added in Vercel project settings.' },
-  { key: 'anthropicKeySet',  label: 'ANTHROPIC_API_KEY set',   hint: 'Used for bespoke drafting and the review pass.' },
-  { key: 'sessionSecretSet', label: 'SESSION_SECRET set',      hint: 'Any 32 byte random hex string.' },
-  { key: 'schemaApplied',    label: 'Schema applied',          hint: 'Paste db/schema.sql into the Neon SQL editor and run it.' },
-  { key: 'seedApplied',      label: 'Seed applied',            hint: 'Then paste db/seed.sql and run it. Safe to re-run.' },
-];
+import { api } from './api.js';
+import Queue from './views/Queue.jsx';
+import Matter from './views/Matter.jsx';
+import Review from './views/Review.jsx';
+import Templates from './views/Templates.jsx';
 
 export default function App() {
-  const [state, setState] = useState({ loading: true });
+  const [tab, setTab] = useState('queue');
+  const [matterId, setMatterId] = useState(null);
+  const [documentId, setDocumentId] = useState(null);
+  const [showNew, setShowNew] = useState(false);
+  const [health, setHealth] = useState(null);
 
-  useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then((d) => setState({ loading: false, ...d }))
-      .catch((e) => setState({ loading: false, error: e.message }));
-  }, []);
+  useEffect(() => { api.health().then(setHealth).catch(() => {}); }, []);
 
-  const checks = state.checks || {};
-  const doneCount = STEPS.filter((s) => checks[s.key]).length;
+  function openMatter(id) { setDocumentId(null); setMatterId(id); }
+  function openDocument(id) { setDocumentId(id); }
+  function backToQueue() { setMatterId(null); setDocumentId(null); }
+
+  let view;
+  if (documentId) {
+    view = <Review documentId={documentId} onBack={() => setDocumentId(null)} />;
+  } else if (matterId) {
+    view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={openDocument} />;
+  } else if (tab === 'templates') {
+    view = <Templates />;
+  } else {
+    view = <Queue onOpenMatter={openMatter} onNewMatter={() => setShowNew(true)} />;
+  }
 
   return (
-    <div className="wrap">
-      <header>
-        <p className="eyebrow">Orca Edge · Tool 2</p>
-        <h1>Document Generation<br />&amp; Review Automation</h1>
-        <p className="sub">
-          Internal, staff facing. Standalone. Law firm beachhead.
-        </p>
+    <div className="wrap wide">
+      <header className="app-head">
+        <div>
+          <p className="eyebrow">Orca Edge &middot; Tool 2</p>
+          <h1 className="app-title">Document Engine</h1>
+        </div>
+        <nav className="tabs">
+          <button
+            className={!matterId && !documentId && tab === 'queue' ? 'tab active' : 'tab'}
+            onClick={() => { backToQueue(); setTab('queue'); }}
+          >
+            Queue
+          </button>
+          <button
+            className={!matterId && !documentId && tab === 'templates' ? 'tab active' : 'tab'}
+            onClick={() => { backToQueue(); setTab('templates'); }}
+          >
+            Templates
+          </button>
+        </nav>
       </header>
 
-      <section className="card">
-        <div className="card-head">
-          <h2>Setup status</h2>
-          {!state.loading && (
-            <span className={state.ready ? 'pill pill-ok' : 'pill pill-wait'}>
-              {doneCount} of {STEPS.length}
-            </span>
-          )}
+      {health && !health.checks?.sessionSecretSet && (
+        <div className="banner">
+          Login is not built yet, so every request acts as the firm owner. Set
+          SESSION_SECRET and build authentication before any real client data goes in.
         </div>
+      )}
 
-        {state.loading && <p className="muted">Checking…</p>}
-        {state.error && <p className="err">Could not reach /api/health: {state.error}</p>}
+      {showNew && (
+        <NewMatter
+          onClose={() => setShowNew(false)}
+          onCreated={(id) => { setShowNew(false); openMatter(id); }}
+        />
+      )}
 
-        {!state.loading && !state.error && (
-          <ul className="checks">
-            {STEPS.map((s) => (
-              <li key={s.key} className={checks[s.key] ? 'ok' : 'pending'}>
-                <span className="mark">{checks[s.key] ? '✓' : '·'}</span>
-                <div>
-                  <strong>{s.label}</strong>
-                  {!checks[s.key] && <span className="hint">{s.hint}</span>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {checks.databaseError && (
-          <p className="err">Database said: {checks.databaseError}</p>
-        )}
-
-        {checks.firm && (
-          <p className="muted">
-            Connected to <strong>{checks.firm.name}</strong> ({checks.firm.vertical}).
-            Illustrative demo firm, fictional.
-          </p>
-        )}
-
-        {state.ready && (
-          <p className="ready">
-            All four setup steps complete. Ready to start building capture.
-          </p>
-        )}
-      </section>
+      <main>{view}</main>
 
       <footer>
         <p>
-          The two rules this codebase does not bend: the AI never fills a gap,
-          and the AI never touches fixed clauses. A qualified person signs off
-          on everything before it leaves the firm.
+          The AI never fills a gap, and the AI never touches fixed clauses.
+          A qualified person signs off on everything before it leaves the firm.
         </p>
       </footer>
+    </div>
+  );
+}
+
+function NewMatter({ onClose, onCreated }) {
+  const [form, setForm] = useState({
+    clientLegalName: '', clientEmail: '', clientAddress: '', matterType: '', reference: '',
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  async function create() {
+    setBusy(true);
+    setError(null);
+    try {
+      const d = await api.createMatter(form);
+      onCreated(d.matter.id);
+    } catch (e) { setError(e.message); }
+    setBusy(false);
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Open a matter</h3>
+        <p className="muted small">
+          The hard facts go in the form, because they must be exactly right.
+          Scope and context come next, and can be dictated once that is built.
+        </p>
+
+        <label className="gap-input">
+          <span>Client legal name</span>
+          <input value={form.clientLegalName} onChange={set('clientLegalName')} />
+        </label>
+        <label className="gap-input">
+          <span>Matter type</span>
+          <input value={form.matterType} onChange={set('matterType')} placeholder="conveyancing, probate, commercial" />
+        </label>
+        <label className="gap-input">
+          <span>Client email</span>
+          <input value={form.clientEmail} onChange={set('clientEmail')} />
+        </label>
+        <label className="gap-input">
+          <span>Client address</span>
+          <input value={form.clientAddress} onChange={set('clientAddress')} />
+        </label>
+        <label className="gap-input">
+          <span>Reference (optional)</span>
+          <input value={form.reference} onChange={set('reference')} placeholder="generated if left blank" />
+        </label>
+
+        {error && <p className="err">{error}</p>}
+
+        <div className="btn-row">
+          <button
+            className="btn-primary"
+            disabled={busy || !form.clientLegalName || !form.matterType}
+            onClick={create}
+          >
+            {busy ? 'Opening…' : 'Open matter'}
+          </button>
+          <button className="btn-small ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
     </div>
   );
 }

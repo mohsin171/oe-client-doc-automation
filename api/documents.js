@@ -1,0 +1,275 @@
+// Documents: generate, read, revise, sign off.
+//
+// Generation is gated twice. Once on the matter completeness check, and again
+// inside the engine, which refuses to call the model while any placeholder is
+// unresolved. Both gates are deliberate. Neither is a formality.
+
+import { sql } from '../lib/db.js';
+import {
+  getMatter, getMatterFields, getTemplate, getPrecedents, assessCompleteness,
+  listDocuments, createDocument, addDocumentVersion, getCurrentVersion,
+  setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
+  markIssued, setMatterStatus, logEvent, logTime,
+} from '../lib/store.js';
+import { generate } from '../lib/engine.js';
+import { resolveContext, canApprove, ok, bad, readBody } from '../lib/context.js';
+
+function valuesFrom(fields) {
+  const out = {};
+  for (const f of fields) out[f.key] = f.value;
+  return out;
+}
+
+export default async function handler(req, res) {
+  let ctx;
+  try {
+    ctx = await resolveContext();
+  } catch (err) {
+    return bad(res, err.message, 500);
+  }
+
+  try {
+    // ---------------- GET ----------------
+    if (req.method === 'GET') {
+      const { matterId, id } = req.query || {};
+
+      if (matterId) {
+        const documents = await listDocuments(ctx.firm_id, Number(matterId));
+        return ok(res, { documents });
+      }
+
+      if (!id) return bad(res, 'Supply id or matterId');
+
+      const rows = await sql`
+        SELECT d.*, m.reference, c.legal_name AS client_name
+        FROM documents d
+        JOIN matters m ON m.id = d.matter_id
+        JOIN clients c ON c.id = m.client_id
+        WHERE d.firm_id = ${ctx.firm_id} AND d.id = ${Number(id)} LIMIT 1`;
+      const document = rows[0];
+      if (!document) return bad(res, 'Document not found', 404);
+
+      const version = await getCurrentVersion(ctx.firm_id, document.id);
+      const flags = version ? await getFlags(version.id) : [];
+
+      const approvals = await sql`
+        SELECT a.*, u.name AS approver_name FROM approvals a
+        JOIN users u ON u.id = a.user_id
+        WHERE a.document_version_id = ${version?.id || 0}
+        ORDER BY a.approved_at DESC`;
+
+      return ok(res, {
+        document, version, flags, approvals,
+        me: { id: ctx.user_id, name: ctx.name, role: ctx.role, canApprove: canApprove(ctx.role) },
+      });
+    }
+
+    if (req.method !== 'POST') return bad(res, 'Method not allowed', 405);
+
+    const body = await readBody(req);
+    const action = body.action;
+
+    // ---------------- Generate ----------------
+    if (action === 'generate' || action === 'regenerate') {
+      const matterId = Number(body.matterId);
+      const templateId = Number(body.templateId);
+
+      const matter = await getMatter(ctx.firm_id, matterId);
+      if (!matter) return bad(res, 'Matter not found', 404);
+
+      const template = await getTemplate(ctx.firm_id, templateId);
+      if (!template) return bad(res, 'Template not found', 404);
+
+      const definition = template.definition || {};
+      const fields = await getMatterFields(matterId);
+      const values = valuesFrom(fields);
+
+      // Gate one: the template's own required fields against what was captured.
+      const completeness = await assessCompleteness(matterId, definition.requiredFields || []);
+      if (!completeness.canGenerate) {
+        return bad(res, JSON.stringify({
+          reason: 'incomplete',
+          missing: completeness.missing,
+          unconfirmedNumbers: completeness.unconfirmedNumbers,
+        }), 409);
+      }
+
+      const started = Date.now();
+      const precedents = await getPrecedents(ctx.firm_id, template.doc_type);
+
+      // Gate two lives inside generate(). It will not call the model while any
+      // placeholder is unresolved.
+      const result = await generate({
+        definition,
+        values,
+        precedents,
+        firmName: ctx.firm_name,
+        docType: template.doc_type,
+      });
+
+      if (!result.ok) {
+        return bad(res, JSON.stringify({ reason: 'incomplete', unresolved: result.unresolved }), 409);
+      }
+
+      let documentId = body.documentId ? Number(body.documentId) : null;
+      let version = 1;
+
+      if (documentId) {
+        const existing = await sql`
+          SELECT current_version, status FROM documents
+          WHERE firm_id = ${ctx.firm_id} AND id = ${documentId} LIMIT 1`;
+        if (!existing[0]) return bad(res, 'Document not found', 404);
+        // Issued versions are immutable. A change always makes a new version.
+        version = existing[0].current_version + 1;
+        await sql`
+          UPDATE documents SET current_version = ${version}, status = 'in_review'
+          WHERE id = ${documentId}`;
+      } else {
+        const doc = await createDocument(ctx.firm_id, {
+          matterId, templateId, docType: template.doc_type, createdBy: ctx.user_id,
+        });
+        documentId = doc.id;
+        await setDocumentStatus(ctx.firm_id, documentId, 'in_review');
+      }
+
+      const dv = await addDocumentVersion(documentId, {
+        version,
+        blocks: result.blocks,
+        mergedValues: result.mergedValues,
+        generatedBy: ctx.user_id,
+      });
+
+      const flags = await replaceFlags(dv.id, result.flags);
+
+      const baseline = ctx.settings?.baselineMinutes?.[template.doc_type] || null;
+      await logTime({
+        firmId: ctx.firm_id,
+        documentId,
+        userId: ctx.user_id,
+        secondsSpent: Math.round((Date.now() - started) / 1000),
+        baselineMinutes: baseline,
+      });
+
+      await logEvent({
+        firmId: ctx.firm_id, matterId, documentId, actorId: ctx.user_id,
+        kind: version === 1 ? 'document_generated' : 'document_regenerated',
+        payload: {
+          version,
+          docType: template.doc_type,
+          flags: flags.length,
+          blocking: flags.filter((f) => f.severity === 'blocking').length,
+        },
+      });
+
+      if (matter.status === 'open') await setMatterStatus(ctx.firm_id, matterId, 'active');
+
+      return ok(res, { documentId, version, blocks: result.blocks, flags });
+    }
+
+    // ---------------- Edit a block by hand ----------------
+    if (action === 'edit_block') {
+      const version = await getCurrentVersion(ctx.firm_id, Number(body.documentId));
+      if (!version) return bad(res, 'Document version not found', 404);
+
+      const blocks = (version.blocks || []).map((b) =>
+        b.key === body.blockKey ? { ...b, body: body.body, editedByHand: true } : b
+      );
+
+      await sql`
+        UPDATE document_versions SET blocks = ${JSON.stringify(blocks)} WHERE id = ${version.id}`;
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId: Number(body.documentId), actorId: ctx.user_id,
+        kind: 'block_edited', payload: { blockKey: body.blockKey },
+      });
+
+      return ok(res, { blocks });
+    }
+
+    // ---------------- Resolve or dismiss a flag ----------------
+    if (action === 'flag') {
+      const flag = await resolveFlag(Number(body.flagId), ctx.user_id, {
+        dismissed: Boolean(body.dismissed),
+        reason: body.reason,
+      });
+      if (!flag) return bad(res, 'Flag not found', 404);
+
+      // A dismissal without a reason is not a dismissal. The reason is what
+      // makes the audit trail worth having two years later.
+      if (body.dismissed && !body.reason) {
+        return bad(res, 'A dismissal needs a reason');
+      }
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId: Number(body.documentId), actorId: ctx.user_id,
+        kind: body.dismissed ? 'flag_dismissed' : 'flag_resolved',
+        payload: { flagId: flag.id, code: flag.code, reason: body.reason || null },
+      });
+
+      const flags = await getFlags(flag.document_version_id);
+      return ok(res, { flags });
+    }
+
+    // ---------------- Sign off ----------------
+    if (action === 'approve') {
+      // Authority is checked on the server. A drafter may prepare but not approve.
+      if (!canApprove(ctx.role)) {
+        return bad(res, 'Your role cannot sign off documents. Route this to an approver.', 403);
+      }
+
+      const documentId = Number(body.documentId);
+      const version = await getCurrentVersion(ctx.firm_id, documentId);
+      if (!version) return bad(res, 'Document version not found', 404);
+
+      const flags = await getFlags(version.id);
+      const openBlocking = flags.filter((f) => f.severity === 'blocking' && f.status === 'open');
+      if (openBlocking.length > 0) {
+        return bad(res, JSON.stringify({
+          reason: 'blocking_flags',
+          flags: openBlocking.map((f) => ({ id: f.id, message: f.message })),
+        }), 409);
+      }
+
+      const dismissed = flags
+        .filter((f) => f.status === 'dismissed')
+        .map((f) => ({ code: f.code, message: f.message, reason: f.dismissed_reason }));
+
+      await recordApproval(version.id, ctx.user_id, dismissed);
+      await setDocumentStatus(ctx.firm_id, documentId, 'approved');
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
+        kind: 'document_approved',
+        payload: { version: version.version, dismissedFlags: dismissed },
+      });
+
+      return ok(res, { approved: true, version: version.version, by: ctx.name });
+    }
+
+    // ---------------- Mark issued ----------------
+    if (action === 'issue') {
+      const documentId = Number(body.documentId);
+      const doc = await sql`
+        SELECT status FROM documents WHERE firm_id = ${ctx.firm_id} AND id = ${documentId} LIMIT 1`;
+      if (!doc[0]) return bad(res, 'Document not found', 404);
+      if (doc[0].status !== 'approved') {
+        return bad(res, 'Only an approved document can be issued', 409);
+      }
+
+      const version = await getCurrentVersion(ctx.firm_id, documentId);
+      await markIssued(version.id);
+      await setDocumentStatus(ctx.firm_id, documentId, 'issued');
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
+        kind: 'document_issued', payload: { version: version.version },
+      });
+
+      return ok(res, { issued: true });
+    }
+
+    return bad(res, 'Unknown action');
+  } catch (err) {
+    return bad(res, err.message, 500);
+  }
+}
