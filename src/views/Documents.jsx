@@ -18,6 +18,7 @@ const FILTERS = [
 
 export default function Documents({ onOpenDocument }) {
   const [documents, setDocuments] = useState([]);
+  const [scope, setScope] = useState(null);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,7 +26,7 @@ export default function Documents({ onOpenDocument }) {
   useEffect(() => {
     setLoading(true);
     api.allDocuments(filter)
-      .then((d) => { setDocuments(d.documents || []); setLoading(false); })
+      .then((d) => { setDocuments(d.documents || []); setScope(d.scope); setLoading(false); })
       .catch((e) => { setError(e.message); setLoading(false); });
   }, [filter]);
 
@@ -39,7 +40,11 @@ export default function Documents({ onOpenDocument }) {
         <div className="section-head">
           <div>
             <div className="section-title">Documents</div>
-            <div className="section-hint">Everything produced, newest first</div>
+            <div className="section-hint">
+              {scope === 'mine'
+                ? 'Letters on your own clients, newest first'
+                : 'Everything the firm has produced, newest first'}
+            </div>
           </div>
         </div>
 

@@ -95,12 +95,15 @@ export default async function handler(req, res) {
 
       // No matter and no document means the whole firm's output.
       if (!id) {
+        const actor = actorFor(ctx);
         const documents = await listAllDocuments(ctx.firm_id, {
           status: (req.query || {}).status,
           docType: (req.query || {}).docType,
-          actor: actorFor(ctx),
+          actor,
         });
-        return ok(res, { documents });
+        // Say which scope was applied. Whether a restriction is working should
+        // be visible on the screen, not inferred from what happens to be there.
+        return ok(res, { documents, scope: actor.seesAll ? 'firm' : 'mine', role: ctx.role });
       }
 
       const rows = await sql`

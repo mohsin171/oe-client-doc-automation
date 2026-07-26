@@ -102,11 +102,14 @@ export default async function handler(req, res) {
       }
 
       if (!id) {
-        const matters = await listMatters(ctx.firm_id, actorFor(ctx));
+        const actor = actorFor(ctx);
+        const matters = await listMatters(ctx.firm_id, actor);
         const users = await listUsers(ctx.firm_id);
-        return ok(res, { matters, users, me: {
-          id: ctx.user_id, name: ctx.name, role: ctx.role, firm: ctx.firm_name,
-        }});
+        return ok(res, {
+          matters, users,
+          scope: actor.seesAll ? 'firm' : 'mine',
+          me: { id: ctx.user_id, name: ctx.name, role: ctx.role, firm: ctx.firm_name },
+        });
       }
 
       if (!(await canSeeMatter(ctx.firm_id, Number(id), actorFor(ctx)))) {
