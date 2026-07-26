@@ -84,6 +84,7 @@ export default async function handler(req, res) {
           schema,
           typed: split.typed,
           extracted: split.extracted,
+          me: { id: ctx.user_id, name: ctx.name },
           templates: templates.map((t) => ({ id: t.id, name: t.name, doc_type: t.doc_type })),
           users: users.filter((u) => u.active),
           clients,
@@ -166,12 +167,17 @@ export default async function handler(req, res) {
       const ref = String(values.matter_reference || body.reference || '').trim()
         || `${new Date().getFullYear()}/${Date.now().toString().slice(-5)}`;
 
+      // Both names come from the session rather than the request. Whoever is
+      // signed in entered the client, so they are the person responsible, and a
+      // browser should not be able to say otherwise.
       const matter = await createMatter(ctx.firm_id, {
         clientId: client.id,
         reference: ref,
         matterType,
-        assignedUserId: body.assignedUserId || ctx.user_id,
+        assignedUserId: ctx.user_id,
       });
+      values.fee_earner_name = ctx.name;
+      if (!String(values.supervisor_name || '').trim()) values.supervisor_name = ctx.name;
 
       // The fee earner's own account, kept whole. The structured fields are
       // derived from it, but the account is what a person would want to read

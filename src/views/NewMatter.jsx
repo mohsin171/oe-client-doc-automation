@@ -22,6 +22,7 @@ export default function NewMatter({ onClose, onCreated }) {
   const [typed, setTypedFields] = useState(null);
   const [extractable, setExtractable] = useState([]);
   const [users, setUsers] = useState([]);
+  const [me, setMe] = useState(null);
   const [clients, setClients] = useState([]);
   const [templates, setTemplates] = useState([]);
 
@@ -42,9 +43,14 @@ export default function NewMatter({ onClose, onCreated }) {
         setTypedFields(d.typed || []);
         setExtractable(d.extracted || []);
         setUsers(d.users || []);
+        setMe(d.me || null);
         setClients(d.clients || []);
         setTemplates(d.templates || []);
-        setValues((v) => ({ ...v, fee_earner_name: d.me?.name || '' }));
+        setValues((v) => ({
+          ...v,
+          fee_earner_name: d.me?.name || '',
+          supervisor_name: d.me?.name || '',
+        }));
       })
       .catch((e) => setLoadError(e.message));
   }, []);
@@ -126,6 +132,18 @@ export default function NewMatter({ onClose, onCreated }) {
           <option value="">Choose…</option>
           {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
+      );
+    } else if (f.auto === 'signed_in') {
+      // Taken from who is signed in, and shown so it is never a surprise.
+      return (
+        <div className="field assigned" key={f.key}>
+          <label><span>{f.label}</span></label>
+          <div className="assigned-to">
+            <span className="who-dot" aria-hidden="true">{(me?.name || '?').charAt(0)}</span>
+            <span>{me?.name || '—'}</span>
+            <em>you</em>
+          </div>
+        </div>
       );
     } else if (f.type === 'user') {
       input = (
