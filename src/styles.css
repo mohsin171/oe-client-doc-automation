@@ -157,7 +157,7 @@ select:focus-visible, a:focus-visible { outline: 2px solid var(--bright); outlin
 .field { display: block; margin-bottom: 14px; }
 .field > span {
   display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.05em; color: var(--muted); margin-bottom: 7px;
+  letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px;
 }
 .input, input[type=text], input[type=email], textarea, select {
   width: 100%; padding: 10px 13px; border-radius: 10px; border: 1px solid var(--line);
@@ -452,13 +452,13 @@ textarea.tall { min-height: 230px; }
 .form-group-head { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
 .form-group-head .box-title { margin-bottom: 4px; }
 
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
 .field-grid .field { margin-bottom: 0; }
 .field-grid .span-2 { grid-column: 1 / -1; }
 .field label { display: block; }
 .field label span {
   display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.05em; color: var(--muted); margin-bottom: 7px;
+  letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px;
 }
 .field input[readonly] { background: var(--canvas); color: var(--muted); }
 
@@ -585,11 +585,11 @@ textarea.tall { min-height: 230px; }
 /* ---------------- Stepped form ---------------- */
 .wizard { max-width: 760px; }
 
-.steps { list-style: none; display: flex; gap: 0; margin: 0 0 26px; padding: 0; }
+.steps { list-style: none; display: flex; gap: 0; margin: 0 0 20px; padding: 0; }
 .stepdot { flex: 1; position: relative; }
 .stepdot button {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  background: none; border: none; padding: 0 0 14px; text-align: left;
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  background: none; border: none; padding: 0 0 11px; text-align: left;
   border-bottom: 2px solid var(--line);
   transition: border-color var(--slow) var(--ease);
 }
@@ -612,32 +612,31 @@ textarea.tall { min-height: 230px; }
 
 .wizard-body {
   background: var(--card); border: 1px solid var(--line); border-radius: 18px;
-  padding: 30px 32px; box-shadow: var(--shadow);
+  padding: 24px 26px; box-shadow: var(--shadow);
   animation: stepIn var(--slow) var(--ease) both;
 }
 @keyframes stepIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
-.wizard-head { margin-bottom: 24px; }
-.wizard-head h2 { font-size: 1.35rem; color: var(--nearblack); margin-bottom: 5px; }
+.wizard-head { font-size: 1.15rem; color: var(--nearblack); margin-bottom: 20px; }
 .wizard-sub {
-  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--muted); font-weight: 800; margin: 26px 0 14px;
-  padding-top: 20px; border-top: 1px solid var(--line-soft);
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--faint); font-weight: 800; margin: 20px 0 12px;
+  padding-top: 16px; border-top: 1px solid var(--line-soft);
 }
 .wizard-foot {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line);
 }
 
 .wizard .narrative {
-  min-height: 260px; border-radius: 14px; padding: 18px 20px;
-  font-size: 0.95rem; line-height: 1.75;
+  min-height: 300px; border-radius: 12px; padding: 16px 18px;
+  font-size: 0.95rem; line-height: 1.7; margin-bottom: 8px;
 }
 .readout {
-  background: var(--light); border-radius: 12px; padding: 13px 16px;
-  font-size: 0.88rem; color: var(--steel); margin-bottom: 20px; line-height: 1.55;
+  background: var(--light); border-radius: 10px; padding: 9px 13px;
+  font-size: 0.84rem; color: var(--steel); margin-bottom: 16px;
 }
 .readout strong { color: var(--nearblack); }
 

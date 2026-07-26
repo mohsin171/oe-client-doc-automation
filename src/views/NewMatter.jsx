@@ -12,9 +12,9 @@ import { api } from '../api.js';
 // than one field among many.
 
 const STEPS = [
-  { key: 'who', title: 'Who the client is', hint: 'Typed, because these have to be exactly right.' },
-  { key: 'call', title: 'What was agreed', hint: 'In your own words, while it is fresh.' },
-  { key: 'check', title: 'Check and save', hint: 'Nothing is accepted without you seeing it.' },
+  { key: 'who', title: 'Client' },
+  { key: 'call', title: 'The call' },
+  { key: 'check', title: 'Check' },
 ];
 
 export default function NewMatter({ onClose, onCreated }) {
@@ -119,7 +119,7 @@ export default function NewMatter({ onClose, onCreated }) {
     const common = { id: `f-${f.key}`, value: v, onChange: set(f.key) };
     let input;
 
-    if (f.type === 'textarea') input = <textarea rows={f.rows || 2} {...common} />;
+    if (f.type === 'textarea') input = <textarea rows={f.rows || 2} placeholder={f.placeholder || ''} {...common} />;
     else if (f.type === 'select') {
       input = (
         <select {...common}>
@@ -186,10 +186,7 @@ export default function NewMatter({ onClose, onCreated }) {
       </ol>
 
       <div className="wizard-body" key={step}>
-        <div className="wizard-head">
-          <h2>{STEPS[step].title}</h2>
-          <p className="muted">{STEPS[step].hint}</p>
-        </div>
+        <h2 className="wizard-head">{STEPS[step].title}</h2>
 
         {step === 0 && (
           <>
@@ -200,10 +197,6 @@ export default function NewMatter({ onClose, onCreated }) {
                   <option value="">Someone new</option>
                   {clients.map((c) => <option key={c.id} value={c.id}>{c.legal_name}</option>)}
                 </select>
-                <span className="prov">
-                  Picking someone already on file fills their details and keeps the
-                  name spelled the same way everywhere.
-                </span>
               </div>
             )}
 
@@ -229,9 +222,7 @@ export default function NewMatter({ onClose, onCreated }) {
               placeholder={'Spoke to the client this morning. Acting on\u2026 Agreed hourly at\u2026 Not covering\u2026 Wants to complete before\u2026'}
             />
             <p className="prov">
-              Fees, scope, what is excluded, dates, anything unusual. Whatever you
-              would tell a colleague. {extractable.length > 0
-                && `We will look for ${extractable.length} things your documents need.`}
+              Fees, scope, exclusions, dates, anything unusual.
             </p>
           </>
         )}
@@ -241,8 +232,7 @@ export default function NewMatter({ onClose, onCreated }) {
             {extractable.length > 0 ? (
               <>
                 <div className="readout">
-                  <strong>{filledExtract} of {extractable.length}</strong> found in your notes.
-                  Each one shows the words it came from. Nothing was assumed.
+                  <strong>{filledExtract} of {extractable.length}</strong> found in your notes
                 </div>
                 <div className="field-grid">{extractable.map((f) => field(f, { hints: false }))}</div>
 
@@ -257,10 +247,7 @@ export default function NewMatter({ onClose, onCreated }) {
                         </div>
                       </div>
                     ))}
-                    <p className="prov">
-                      Fill these above, or leave them. A document will not generate
-                      until they are answered, and nothing will be guessed.
-                    </p>
+                    <p className="prov">Fill these above, or leave them for later.</p>
                   </div>
                 )}
               </>
@@ -271,11 +258,7 @@ export default function NewMatter({ onClose, onCreated }) {
               </p>
             )}
 
-            {templates.length === 0 && (
-              <div className="notice warn">
-                No documents uploaded yet. Add some so this knows what to look for.
-              </div>
-            )}
+
           </>
         )}
 
@@ -288,9 +271,7 @@ export default function NewMatter({ onClose, onCreated }) {
                 Continue
               </button>
               <button className="btn-ghost" onClick={onClose}>Cancel</button>
-              {!canLeaveWho && (
-                <span className="prov">A legal name and the type of work are the minimum.</span>
-              )}
+              {!canLeaveWho && <span className="prov">Name and type of work needed</span>}
             </>
           )}
 
