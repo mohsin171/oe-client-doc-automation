@@ -5,6 +5,7 @@ import Queue from './views/Queue.jsx';
 import Matter from './views/Matter.jsx';
 import Review from './views/Review.jsx';
 import Templates from './views/Templates.jsx';
+import Documents from './views/Documents.jsx';
 import Team from './views/Team.jsx';
 import FirmMark from './views/FirmMark.jsx';
 import NewMatter from './views/NewMatter.jsx';
@@ -18,16 +19,21 @@ const STATUS_LABEL = {
 
 // Three destinations. Adding a client is an action taken on the client list,
 // not a place you navigate to, so it does not belong in the navigation.
+// Two different things that were sharing one name: the letters the firm has
+// written before, which is what drafting learns from, and the letters this
+// system has produced.
 const NAV = [
   { key: 'clients', label: 'Clients' },
-  { key: 'templates', label: 'Documents' },
+  { key: 'documents', label: 'Documents' },
+  { key: 'templates', label: 'Templates' },
   { key: 'team', label: 'Team', ownerOnly: true },
 ];
 
 const TITLES = {
   clients: 'Clients',
   new: 'New client',
-  templates: 'Your documents',
+  documents: 'Documents',
+  templates: 'Templates',
   team: 'Team',
 };
 
@@ -108,6 +114,8 @@ export default function App() {
     view = <Review documentId={documentId} onBack={() => { setDocumentId(null); loadMatters(); }} />;
   } else if (matterId) {
     view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={setDocumentId} />;
+  } else if (tab === 'documents') {
+    view = <Documents onOpenDocument={setDocumentId} />;
   } else if (tab === 'templates') {
     view = <Templates />;
   } else if (tab === 'team') {

@@ -253,8 +253,7 @@ export default function NewMatter({ onClose, onCreated }) {
               </>
             ) : (
               <p className="muted">
-                No documents uploaded yet, so nothing is being looked for beyond the
-                basics. Add some on the Documents page.
+                No letters uploaded yet, so nothing is being looked for beyond the basics.
               </p>
             )}
 

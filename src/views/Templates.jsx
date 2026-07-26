@@ -138,11 +138,10 @@ export default function Templates() {
       <div className="section">
         <div className="section-head">
           <div>
-            <div className="section-title">Your documents</div>
+            <div className="section-title">Templates</div>
             <div className="section-hint">
-              Upload documents you have already sent to clients. The more you add,
-              the better this works: wording that appears in all of them is your
-              standard terms, and the rest is what gets written fresh each time.
+              Letters you have already sent. Wording appearing in all of them is
+              your standard terms; the rest is written fresh each time.
             </div>
           </div>
           {totalOnFile > 0 && <span className="count">{totalOnFile} on file</span>}
@@ -305,11 +304,8 @@ export default function Templates() {
         <div className="section">
           <div className="section-head">
             <div>
-              <div className="section-title">Documents on file</div>
-              <div className="section-hint">
-                Everything you have handed over. These are what drafting is grounded
-                on, so it is worth knowing exactly what is in here.
-              </div>
+              <div className="section-title">Letters on file</div>
+              <div className="section-hint">What drafting is grounded on</div>
             </div>
             <div className="row-side">
               <span className="count">{onFile.length}</span>

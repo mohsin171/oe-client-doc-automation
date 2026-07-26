@@ -49,6 +49,7 @@ export const api = {
   deleteTemplate: (templateId) => req('/api/templates', { method: 'POST', body: JSON.stringify({ action: 'delete_template', templateId }) }),
 
   listDocuments: (matterId) => req(`/api/documents?matterId=${matterId}`),
+  allDocuments: (status = '') => req(`/api/documents${status ? `?status=${status}` : ''}`),
   getDocument: (id) => req(`/api/documents?id=${id}`),
   generate: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'generate', ...body }) }),
   regenerate: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'regenerate', ...body }) }),

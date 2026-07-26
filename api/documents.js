@@ -7,7 +7,7 @@
 import { sql } from '../lib/db.js';
 import {
   getMatter, getMatterFields, getTemplate, getPrecedents, assessCompleteness,
-  listDocuments, createDocument, addDocumentVersion, getCurrentVersion,
+  listDocuments, listAllDocuments, createDocument, addDocumentVersion, getCurrentVersion,
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
@@ -89,7 +89,14 @@ export default async function handler(req, res) {
         return ok(res, { documents });
       }
 
-      if (!id) return bad(res, 'Supply id or matterId');
+      // No matter and no document means the whole firm's output.
+      if (!id) {
+        const documents = await listAllDocuments(ctx.firm_id, {
+          status: (req.query || {}).status,
+          docType: (req.query || {}).docType,
+        });
+        return ok(res, { documents });
+      }
 
       const rows = await sql`
         SELECT d.*, m.reference, c.legal_name AS client_name

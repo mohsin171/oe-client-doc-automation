@@ -660,3 +660,12 @@ textarea.tall { min-height: 230px; }
   .stepdot button { justify-content: center; padding-bottom: 12px; }
   .wizard-body { padding: 22px 20px; }
 }
+
+/* ---------------- Filters ---------------- */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.chip-btn {
+  background: var(--card); border: 1px solid var(--line); color: var(--muted);
+  padding: 6px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+}
+.chip-btn:hover { border-color: #C9DBEE; color: var(--ink); }
+.chip-btn.on { background: var(--light); border-color: rgba(69,146,220,0.35); color: var(--steel); }
