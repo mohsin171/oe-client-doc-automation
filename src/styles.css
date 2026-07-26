@@ -62,7 +62,7 @@ select:focus-visible, a:focus-visible { outline: 2px solid var(--bright); outlin
   font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em;
   color: var(--faint); font-weight: 800; padding: 0 10px 12px;
 }
-.side-item, .side-item-btn {
+.side-item-btn {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 9px 11px; border-radius: 10px; font-size: 0.87rem; color: var(--ink);
   border: none; background: none; text-align: left; transition: background 0.15s;
@@ -73,11 +73,6 @@ select:focus-visible, a:focus-visible { outline: 2px solid var(--bright); outlin
 .side-item-label { flex: 1; }
 .side-count { font-size: 0.82rem; color: var(--bright); font-weight: 700; min-width: 20px; text-align: right; }
 .side-count.urgent { color: var(--steel); background: #DCEAF8; border-radius: 999px; padding: 1px 8px; }
-.side-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.side-dot.incomplete { background: var(--amber); }
-.side-dot.open { background: var(--bright); }
-.side-dot.active { background: var(--steel); }
-.side-dot.closed { background: var(--faint); }
 .side-foot { margin-top: auto; font-size: 0.7rem; color: var(--faint); padding: 16px 10px 0; line-height: 1.5; }
 
 /* ---- Workspace + top nav ---- */

@@ -10,13 +10,6 @@ import Team from './views/Team.jsx';
 import FirmMark from './views/FirmMark.jsx';
 import NewMatter from './views/NewMatter.jsx';
 
-const STATUS_LABEL = {
-  incomplete: 'Needs data',
-  open: 'Ready to draft',
-  active: 'In progress',
-  closed: 'Closed',
-};
-
 // Three destinations. Adding a client is an action taken on the client list,
 // not a place you navigate to, so it does not belong in the navigation.
 // Two different things that were sharing one name: the letters the firm has
@@ -157,21 +150,6 @@ export default function App() {
               </button>
             ))}
           </div>
-
-          {matters.length > 0 && (
-            <div className="side-section">
-              <div className="side-label">Matters</div>
-              {['incomplete', 'open', 'active', 'closed'].map((k) => (
-                counts[k] ? (
-                  <div className="side-item" key={k}>
-                    <span className={`side-dot ${k}`} />
-                    <span className="side-item-label">{STATUS_LABEL[k]}</span>
-                    <span className={k === 'incomplete' ? 'side-count urgent' : 'side-count'}>{counts[k]}</span>
-                  </div>
-                ) : null
-              ))}
-            </div>
-          )}
 
           <div className="side-foot">
             Signed off by a person, always.
