@@ -39,7 +39,6 @@ export default function Queue({ matters = [], onOpenMatter, onNewMatter }) {
             <div className="section-title">Clients</div>
             <div className="section-hint">Sorted by what needs you first</div>
           </div>
-          <button className="btn-primary" onClick={onNewMatter}>New client</button>
         </div>
 
         <div className="stats">
