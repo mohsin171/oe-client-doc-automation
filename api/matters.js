@@ -4,12 +4,13 @@
 // required field is missing or a captured number is unconfirmed.
 
 import {
-  listMatters, getMatter, createMatter, setMatterStatus,
+  listMatters, getMatter, createMatter, setMatterStatus, canSeeMatter,
+  conflictCheck, grantMatterAccess, revokeMatterAccess, listMatterAccess, reassignMatter,
   findOrCreateClient, getMatterFields, upsertMatterField, confirmMatterField,
   assessCompleteness, listTemplates, getMatterTimeline, listUsers, logEvent,
 } from '../lib/store.js';
 import { sql } from '../lib/db.js';
-import { requireContext, ok, bad, readBody } from '../lib/context.js';
+import { requireContext, actorFor, ok, bad, readBody } from '../lib/context.js';
 import { buildFormSchema, splitSchema, fieldMeta, canonicalKey, isSystemField } from '../lib/fields.js';
 import { extractFromNarrative } from '../lib/extract.js';
 
@@ -92,16 +93,30 @@ export default async function handler(req, res) {
         });
       }
 
+      // A name only conflict check, available to everyone. It answers whether
+      // the firm already acts for someone by that name and nothing else: no
+      // file, no fee earner, no detail.
+      if (view === 'conflict') {
+        const { matches } = await conflictCheck(ctx.firm_id, (req.query || {}).name);
+        return ok(res, { matches });
+      }
+
       if (!id) {
-        const matters = await listMatters(ctx.firm_id);
+        const matters = await listMatters(ctx.firm_id, actorFor(ctx));
         const users = await listUsers(ctx.firm_id);
         return ok(res, { matters, users, me: {
           id: ctx.user_id, name: ctx.name, role: ctx.role, firm: ctx.firm_name,
         }});
       }
 
+      if (!(await canSeeMatter(ctx.firm_id, Number(id), actorFor(ctx)))) {
+        // Deliberately the same answer as a matter that does not exist. Saying
+        // "you cannot see this" confirms the client is on the system.
+        return bad(res, 'Client not found', 404);
+      }
+
       const matter = await getMatter(ctx.firm_id, Number(id));
-      if (!matter) return bad(res, 'Matter not found', 404);
+      if (!matter) return bad(res, 'Client not found', 404);
 
       const fields = await getMatterFields(matter.id);
       const required = await requiredFor(ctx.firm_id, matter);
@@ -109,6 +124,7 @@ export default async function handler(req, res) {
       const templates = await listTemplates(ctx.firm_id);
       const timeline = view === 'full' ? await getMatterTimeline(ctx.firm_id, matter.id) : [];
       const users = (await listUsers(ctx.firm_id)).filter((u) => u.active);
+      const access = await listMatterAccess(matter.id);
 
       // Describe each gap so it can be filled with the right control rather
       // than a text box for everything.
@@ -295,6 +311,38 @@ export default async function handler(req, res) {
     }
 
     // ---------------- Close a matter ----------------
+    // Reassignment and cover, owner only.
+    if (body.action === 'reassign' || body.action === 'grant' || body.action === 'revoke') {
+      if (ctx.role !== 'owner') {
+        return bad(res, 'Only the firm owner can change who sees a file', 403);
+      }
+      const matterId = Number(body.matterId);
+      const userId = Number(body.userId);
+
+      if (body.action === 'reassign') {
+        const updated = await reassignMatter(ctx.firm_id, matterId, userId);
+        if (!updated) return bad(res, 'Client not found', 404);
+        await logEvent({
+          firmId: ctx.firm_id, matterId, actorId: ctx.user_id,
+          kind: 'matter_reassigned', payload: { userId },
+        });
+      } else if (body.action === 'grant') {
+        await grantMatterAccess(matterId, userId, ctx.user_id);
+        await logEvent({
+          firmId: ctx.firm_id, matterId, actorId: ctx.user_id,
+          kind: 'access_granted', payload: { userId },
+        });
+      } else {
+        await revokeMatterAccess(matterId, userId);
+        await logEvent({
+          firmId: ctx.firm_id, matterId, actorId: ctx.user_id,
+          kind: 'access_revoked', payload: { userId },
+        });
+      }
+
+      return ok(res, { access: await listMatterAccess(matterId) });
+    }
+
     if (body.action === 'close') {
       const matterId = Number(body.matterId);
       await setMatterStatus(ctx.firm_id, matterId, 'closed');

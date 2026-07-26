@@ -100,6 +100,18 @@ CREATE TABLE IF NOT EXISTS matter_fields (
   UNIQUE (matter_id, key)
 );
 
+-- A second person given sight of a file they were not assigned, so a colleague
+-- being away does not freeze their work.
+CREATE TABLE IF NOT EXISTS matter_access (
+  id          SERIAL PRIMARY KEY,
+  matter_id   INTEGER NOT NULL REFERENCES matters(id) ON DELETE CASCADE,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  granted_by  INTEGER REFERENCES users(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (matter_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_matter_access_user ON matter_access(user_id);
+
 -- Raw dictation kept for audit, separate from the structured result.
 CREATE TABLE IF NOT EXISTS captures (
   id            SERIAL PRIMARY KEY,

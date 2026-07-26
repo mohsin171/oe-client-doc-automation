@@ -34,6 +34,10 @@ export const api = {
 
   listMatters: () => req('/api/matters'),
   matterForm: () => req('/api/matters?view=form'),
+  conflictCheck: (name) => req(`/api/matters?view=conflict&name=${encodeURIComponent(name)}`),
+  reassign: (matterId, userId) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'reassign', matterId, userId }) }),
+  grantAccess: (matterId, userId) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'grant', matterId, userId }) }),
+  revokeAccess: (matterId, userId) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'revoke', matterId, userId }) }),
   extractNotes: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'extract', ...body }) }),
   getMatter: (id, view) => req(`/api/matters?id=${id}${view ? `&view=${view}` : ''}`),
   createMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'create', ...body }) }),

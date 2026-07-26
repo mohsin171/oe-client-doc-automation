@@ -27,7 +27,7 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
 
   const {
     matter, fields = [], completeness = {}, templates = [], timeline = [],
-    users = [], gaps = [], suggestions = [],
+    users = [], gaps = [], suggestions = [], access = [], canManageAccess = false,
   } = state;
   const missing = completeness.missing || [];
   const unconfirmed = completeness.unconfirmedNumbers || [];
@@ -39,6 +39,12 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
       setDraft({});
       await load();
     } catch (e) { setError(e.message); }
+    setBusy(null);
+  }
+
+  async function changeAccess(fn) {
+    setBusy('access'); setError(null);
+    try { await fn(); await load(); } catch (e) { setError(e.message); }
     setBusy(null);
   }
 
@@ -308,6 +314,72 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
           )}
         </div>
       </div>
+
+      {canManageAccess && (
+        <div className="section">
+          <div className="section-head">
+            <div className="section-title">Who can see this file</div>
+            <div className="section-hint">
+              Assigned to one person. Add a colleague for cover so time off does
+              not freeze the work.
+            </div>
+          </div>
+
+          <div className="panel-box">
+            <div className="field">
+              <label><span>Handled by</span></label>
+              <select
+                value={users.find((u) => u.name === matter.assigned_name)?.id || ''}
+                disabled={busy === 'access'}
+                onChange={(e) => changeAccess(() => api.reassign(matterId, Number(e.target.value)))}
+              >
+                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+
+            {access.length > 0 && (
+              <div className="rows" style={{ marginBottom: 14 }}>
+                {access.map((a) => (
+                  <div className="row" key={a.user_id}>
+                    <div className="row-main">
+                      <strong>{a.name}</strong>
+                      <span className="row-sub">Added for cover</span>
+                    </div>
+                    <div className="row-side">
+                      <button
+                        className="btn-ghost"
+                        disabled={busy === 'access'}
+                        onClick={() => changeAccess(() => api.revokeAccess(matterId, a.user_id))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {users.filter((u) => u.name !== matter.assigned_name
+                && !access.some((a) => a.user_id === u.id)).length > 0 && (
+              <div className="field">
+                <label><span>Give someone else access</span></label>
+                <select
+                  value=""
+                  disabled={busy === 'access'}
+                  onChange={(e) => e.target.value
+                    && changeAccess(() => api.grantAccess(matterId, Number(e.target.value)))}
+                >
+                  <option value="">Choose a colleague…</option>
+                  {users
+                    .filter((u) => u.name !== matter.assigned_name
+                      && !access.some((a) => a.user_id === u.id))
+                    .map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {timeline.length > 0 && (
         <div className="section">

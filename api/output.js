@@ -7,8 +7,8 @@ import {
   Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle,
 } from 'docx';
 import { sql } from '../lib/db.js';
-import { getCurrentVersion, logEvent } from '../lib/store.js';
-import { requireContext, bad } from '../lib/context.js';
+import { getCurrentVersion, logEvent, canSeeMatter } from '../lib/store.js';
+import { requireContext, actorFor, bad } from '../lib/context.js';
 
 export default async function handler(req, res) {
   const ctx = await requireContext(req, res);
@@ -26,6 +26,11 @@ export default async function handler(req, res) {
       WHERE d.firm_id = ${ctx.firm_id} AND d.id = ${documentId} LIMIT 1`;
     const document = rows[0];
     if (!document) return bad(res, 'Document not found', 404);
+    // A download link is a URL. Without this, a restricted file is one guessed
+    // id away from leaving the firm.
+    if (!(await canSeeMatter(ctx.firm_id, document.matter_id, actorFor(ctx)))) {
+      return bad(res, 'Document not found', 404);
+    }
 
     if (!['approved', 'issued'].includes(document.status)) {
       return bad(res, 'This document has not been signed off yet. Only approved documents can be downloaded.', 409);

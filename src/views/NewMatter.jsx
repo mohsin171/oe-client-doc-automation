@@ -33,6 +33,7 @@ export default function NewMatter({ onClose, onCreated }) {
   const [readResult, setReadResult] = useState(null);
 
   const [reading, setReading] = useState(false);
+  const [conflict, setConflict] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -75,6 +76,19 @@ export default function NewMatter({ onClose, onCreated }) {
       client_phone: c.phone || v.client_phone || '',
       client_address: c.address || v.client_address || '',
     }));
+  }
+
+  // A firm has to know whether it already acts for the other side. An employee
+  // who can only see their own clients cannot answer that, so this answers it
+  // for them: how many matches, and nothing else. No file, no colleague, no
+  // detail that would breach the confidence of another client.
+  async function checkConflict() {
+    const name = String(values.client_legal_name || '').trim();
+    if (name.length < 3) { setConflict(null); return; }
+    try {
+      const d = await api.conflictCheck(name);
+      setConflict(d.matches);
+    } catch (_) { setConflict(null); }
   }
 
   async function readNotes() {
@@ -220,6 +234,14 @@ export default function NewMatter({ onClose, onCreated }) {
 
             <div className="field-grid">{identity.map((f) => field(f))}</div>
 
+            {conflict !== null && (
+              <div className={conflict > 0 ? 'notice warn' : 'notice info'}>
+                {conflict > 0
+                  ? `The firm already acts for ${conflict} client${conflict > 1 ? 's' : ''} by this name. Check for a conflict before going further.`
+                  : 'No existing client by that name.'}
+              </div>
+            )}
+
             {work.length > 0 && (
               <>
                 <div className="wizard-sub">The work</div>
@@ -284,8 +306,15 @@ export default function NewMatter({ onClose, onCreated }) {
         <div className="wizard-foot">
           {step === 0 && (
             <>
-              <button className="btn-primary" disabled={!canLeaveWho} onClick={() => setStep(1)}>
+              <button
+                className="btn-primary"
+                disabled={!canLeaveWho}
+                onClick={async () => { await checkConflict(); setStep(1); }}
+              >
                 Continue
+              </button>
+              <button className="btn" onClick={checkConflict} disabled={!String(values.client_legal_name || '').trim()}>
+                Check for conflict
               </button>
               <button className="btn-ghost" onClick={onClose}>Cancel</button>
               {!canLeaveWho && <span className="prov">Name and type of work needed</span>}

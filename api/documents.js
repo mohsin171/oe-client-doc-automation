@@ -8,12 +8,13 @@ import { sql } from '../lib/db.js';
 import {
   getMatter, getMatterFields, getTemplate, getPrecedents, assessCompleteness,
   listDocuments, listAllDocuments, createDocument, addDocumentVersion, getCurrentVersion,
+  canSeeMatter,
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
 import { generate } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS } from '../lib/fields.js';
-import { requireContext, canApprove, ok, bad, readBody } from '../lib/context.js';
+import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
 
 function valuesFrom(fields) {
   const out = {};
@@ -85,6 +86,9 @@ export default async function handler(req, res) {
       const { matterId, id } = req.query || {};
 
       if (matterId) {
+        if (!(await canSeeMatter(ctx.firm_id, Number(matterId), actorFor(ctx)))) {
+          return bad(res, 'Not found', 404);
+        }
         const documents = await listDocuments(ctx.firm_id, Number(matterId));
         return ok(res, { documents });
       }
@@ -94,6 +98,7 @@ export default async function handler(req, res) {
         const documents = await listAllDocuments(ctx.firm_id, {
           status: (req.query || {}).status,
           docType: (req.query || {}).docType,
+          actor: actorFor(ctx),
         });
         return ok(res, { documents });
       }
@@ -106,6 +111,11 @@ export default async function handler(req, res) {
         WHERE d.firm_id = ${ctx.firm_id} AND d.id = ${Number(id)} LIMIT 1`;
       const document = rows[0];
       if (!document) return bad(res, 'Document not found', 404);
+      if (!(await canSeeMatter(ctx.firm_id, document.matter_id, actorFor(ctx)))) {
+        // Same answer as a document that does not exist, so the response cannot
+        // be used to work out which clients the firm has.
+        return bad(res, 'Document not found', 404);
+      }
 
       const version = await getCurrentVersion(ctx.firm_id, document.id);
       const flags = version ? await getFlags(version.id) : [];
@@ -132,8 +142,11 @@ export default async function handler(req, res) {
       const matterId = Number(body.matterId);
       const templateId = Number(body.templateId);
 
+      if (!(await canSeeMatter(ctx.firm_id, matterId, actorFor(ctx)))) {
+        return bad(res, 'Not found', 404);
+      }
       const matter = await getMatter(ctx.firm_id, matterId);
-      if (!matter) return bad(res, 'Matter not found', 404);
+      if (!matter) return bad(res, 'Not found', 404);
 
       const template = await getTemplate(ctx.firm_id, templateId);
       if (!template) return bad(res, 'Template not found', 404);
@@ -234,6 +247,18 @@ export default async function handler(req, res) {
     }
 
     // ---------------- Edit a block by hand ----------------
+    // One guard for every action that names a document, rather than four
+    // separate checks that each have to be remembered.
+    if (['edit_block', 'flag', 'approve', 'issue'].includes(action) && body.documentId) {
+      const owning = await sql`
+        SELECT matter_id FROM documents
+        WHERE firm_id = ${ctx.firm_id} AND id = ${Number(body.documentId)} LIMIT 1`;
+      if (!owning[0]) return bad(res, 'Document not found', 404);
+      if (!(await canSeeMatter(ctx.firm_id, owning[0].matter_id, actorFor(ctx)))) {
+        return bad(res, 'Document not found', 404);
+      }
+    }
+
     if (action === 'edit_block') {
       const version = await getCurrentVersion(ctx.firm_id, Number(body.documentId));
       if (!version) return bad(res, 'Document version not found', 404);
