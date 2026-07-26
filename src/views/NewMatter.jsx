@@ -22,6 +22,8 @@ export default function NewMatter({ onClose, onCreated }) {
   const [typed, setTypedFields] = useState(null);
   const [extractable, setExtractable] = useState([]);
   const [users, setUsers] = useState([]);
+  const [colleagues, setColleagues] = useState([]);
+  const [me, setMe] = useState(null);
   const [clients, setClients] = useState([]);
   const [templates, setTemplates] = useState([]);
 
@@ -42,6 +44,8 @@ export default function NewMatter({ onClose, onCreated }) {
         setTypedFields(d.typed || []);
         setExtractable(d.extracted || []);
         setUsers(d.users || []);
+        setColleagues(d.colleagues || []);
+        setMe(d.me || null);
         setClients(d.clients || []);
         setTemplates(d.templates || []);
         setValues((v) => ({ ...v, fee_earner_name: d.me?.name || '' }));
@@ -127,12 +131,35 @@ export default function NewMatter({ onClose, onCreated }) {
           {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       );
+    } else if (f.auto === 'signed_in') {
+      // Taken from who is signed in, and shown so it is never a surprise.
+      return (
+        <div className="field assigned" key={f.key}>
+          <label><span>{f.label}</span></label>
+          <div className="assigned-to">
+            <span className="who-dot" aria-hidden="true">{(me?.name || '?').charAt(0)}</span>
+            <span>{me?.name || '—'}</span>
+            <em>you</em>
+          </div>
+        </div>
+      );
     } else if (f.type === 'user') {
+      // A supervisor is someone other than the person handling it, wherever the
+      // firm has anyone else. A sole practitioner is genuinely both.
+      const isSupervisor = f.key === 'supervisor_name';
+      const options = isSupervisor && colleagues.length > 0 ? colleagues : users;
       input = (
-        <select {...common}>
-          <option value="">Choose…</option>
-          {users.map((u) => <option key={u.id} value={u.name}>{u.name}</option>)}
-        </select>
+        <>
+          <select {...common}>
+            <option value="">Choose…</option>
+            {options.map((u) => <option key={u.id} value={u.name}>{u.name}</option>)}
+          </select>
+          {isSupervisor && colleagues.length === 0 && (
+            <span className="prov">
+              Nobody else on the team yet, so this can only be you.
+            </span>
+          )}
+        </>
       );
     } else if (f.type === 'date') input = <input type="date" {...common} />;
     else if (f.type === 'number') {
