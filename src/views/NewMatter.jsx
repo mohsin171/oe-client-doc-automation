@@ -1,21 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 
-// Two halves, because the two kinds of information fail differently.
+// Three steps, because the information arrives in three distinct ways.
 //
-// Hard facts are typed. A legal name or a postcode has to be exactly right, and
-// typing it takes seconds, so having a model guess at it adds risk for nothing.
+// Who they are is typed, since a legal name or a postcode has to be exact.
+// What was agreed is written as prose, the way you would tell a colleague.
+// What was read back is checked, because nothing should be accepted unseen.
 //
-// Everything else is written or dictated as prose, the way the fee earner would
-// describe the call to a colleague. The system reads that and pulls out what a
-// document needs, showing the words it relied on for each value.
+// One long page hid that structure behind four identical grey boxes. Splitting
+// it makes each part obviously finishable, and makes the notes a moment rather
+// than one field among many.
 
-const TYPED_GROUPS = [
-  { key: 'client', title: 'Client', note: 'Exactly as it should appear on a document.' },
-  { key: 'matter', title: 'The work', note: 'What this file is, and who is handling it.' },
+const STEPS = [
+  { key: 'who', title: 'Who the client is', hint: 'Typed, because these have to be exactly right.' },
+  { key: 'call', title: 'What was agreed', hint: 'In your own words, while it is fresh.' },
+  { key: 'check', title: 'Check and save', hint: 'Nothing is accepted without you seeing it.' },
 ];
 
 export default function NewMatter({ onClose, onCreated }) {
+  const [step, setStep] = useState(0);
   const [typed, setTypedFields] = useState(null);
   const [extractable, setExtractable] = useState([]);
   const [users, setUsers] = useState([]);
@@ -25,10 +28,10 @@ export default function NewMatter({ onClose, onCreated }) {
   const [values, setValues] = useState({});
   const [clientId, setClientId] = useState('');
   const [narrative, setNarrative] = useState('');
-  const [reading, setReading] = useState(false);
-  const [readResult, setReadResult] = useState(null);
   const [provenance, setProvenance] = useState({});
+  const [readResult, setReadResult] = useState(null);
 
+  const [reading, setReading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -48,7 +51,6 @@ export default function NewMatter({ onClose, onCreated }) {
 
   const set = (k) => (e) => {
     setValues({ ...values, [k]: e.target.value });
-    // A value a person edits by hand is theirs now, not the system's reading.
     if (provenance[k]) {
       const next = { ...provenance };
       delete next[k];
@@ -70,7 +72,7 @@ export default function NewMatter({ onClose, onCreated }) {
   }
 
   async function readNotes() {
-    setReading(true); setError(null); setReadResult(null);
+    setReading(true); setError(null);
     try {
       const d = await api.extractNotes({ narrative, values });
       const next = { ...values };
@@ -82,18 +84,10 @@ export default function NewMatter({ onClose, onCreated }) {
       setValues(next);
       setProvenance(prov);
       setReadResult(d);
+      setStep(2);
     } catch (e) { setError(e.message); }
     setReading(false);
   }
-
-  const typedGrouped = useMemo(() => {
-    const out = {};
-    for (const f of typed || []) (out[f.group] = out[f.group] || []).push(f);
-    return out;
-  }, [typed]);
-
-  const ready = ['client_legal_name', 'matter_type'].every((k) => String(values[k] || '').trim());
-  const captured = (extractable || []).filter((f) => String(values[f.key] || '').trim()).length;
 
   async function save() {
     setBusy(true); setError(null);
@@ -108,7 +102,19 @@ export default function NewMatter({ onClose, onCreated }) {
     setBusy(false);
   }
 
-  function renderField(f, opts = {}) {
+  const identity = useMemo(
+    () => (typed || []).filter((f) => f.group === 'client'),
+    [typed]
+  );
+  const work = useMemo(
+    () => (typed || []).filter((f) => f.group !== 'client'),
+    [typed]
+  );
+
+  const canLeaveWho = ['client_legal_name', 'matter_type'].every((k) => String(values[k] || '').trim());
+  const filledExtract = (extractable || []).filter((f) => String(values[f.key] || '').trim()).length;
+
+  function field(f, opts = {}) {
     const v = values[f.key] || '';
     const common = { id: `f-${f.key}`, value: v, onChange: set(f.key) };
     let input;
@@ -146,79 +152,150 @@ export default function NewMatter({ onClose, onCreated }) {
         <label htmlFor={`f-${f.key}`}>
           <span>
             {f.label}
-            {quote && <em className="from-notes">read from your notes</em>}
+            {quote && <em className="from-notes">from your notes</em>}
           </span>
         </label>
         {input}
         {quote && <span className="quote">“{quote}”</span>}
-        {!quote && f.hint && opts.showHint !== false && <span className="prov">{f.hint}</span>}
+        {!quote && f.hint && opts.hints !== false && <span className="prov">{f.hint}</span>}
       </div>
     );
   }
 
-  return (
-    <>
-      <button className="back" onClick={onClose}>Back to queue</button>
+  if (loadError) return <div className="notice err">{loadError}</div>;
+  if (!typed) return <p className="muted">Loading…</p>;
 
-      <div className="form-page">
-        <div className="section-head">
-          <div>
-            <div className="section-title">Client details</div>
-            <div className="section-hint">
-              Entered once, reused by every document on this file.
-            </div>
-          </div>
+  return (
+    <div className="wizard">
+      <ol className="steps" aria-label="Progress">
+        {STEPS.map((s, i) => (
+          <li
+            key={s.key}
+            className={`stepdot ${i === step ? 'now' : ''} ${i < step ? 'done' : ''}`}
+          >
+            <button
+              onClick={() => i < step && setStep(i)}
+              disabled={i > step}
+              aria-current={i === step ? 'step' : undefined}
+            >
+              <span className="stepnum">{i < step ? '✓' : i + 1}</span>
+              <span className="steplabel">{s.title}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <div className="wizard-body" key={step}>
+        <div className="wizard-head">
+          <h2>{STEPS[step].title}</h2>
+          <p className="muted">{STEPS[step].hint}</p>
         </div>
 
-        {loadError && <div className="notice err">{loadError}</div>}
-        {!typed && !loadError && <p className="muted">Loading…</p>}
+        {step === 0 && (
+          <>
+            {clients.length > 0 && (
+              <div className="field">
+                <label><span>Already on file</span></label>
+                <select value={clientId} onChange={(e) => pickClient(e.target.value)}>
+                  <option value="">Someone new</option>
+                  {clients.map((c) => <option key={c.id} value={c.id}>{c.legal_name}</option>)}
+                </select>
+                <span className="prov">
+                  Picking someone already on file fills their details and keeps the
+                  name spelled the same way everywhere.
+                </span>
+              </div>
+            )}
 
-        {typed && clients.length > 0 && (
-          <div className="panel-box returning-client">
-            <label><span>Already on file</span></label>
-            <select value={clientId} onChange={(e) => pickClient(e.target.value)}>
-              <option value="">Someone new</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.legal_name}</option>)}
-            </select>
-            <span className="prov">
-              Picking someone already on file fills their details and keeps the name
-              spelled the same way everywhere.
-            </span>
-          </div>
+            <div className="field-grid">{identity.map((f) => field(f))}</div>
+
+            {work.length > 0 && (
+              <>
+                <div className="wizard-sub">The work</div>
+                <div className="field-grid">{work.map((f) => field(f))}</div>
+              </>
+            )}
+          </>
         )}
 
-        {typed && TYPED_GROUPS.map((g) => (
-          typedGrouped[g.key]?.length ? (
-            <section className="panel-box form-group" key={g.key}>
-              <div className="form-group-head">
-                <div className="box-title">{g.title}</div>
-                <span className="prov">{g.note}</span>
-              </div>
-              <div className="field-grid">{typedGrouped[g.key].map((f) => renderField(f))}</div>
-            </section>
-          ) : null
-        ))}
-
-        {/* The account of the call. This is where the real information lives. */}
-        {typed && (
-          <section className="panel-box notes-box">
-            <div className="form-group-head">
-              <div className="box-title">What was agreed on the call</div>
-              <span className="prov">
-                Write it the way you would tell a colleague. Fees, scope, what is
-                excluded, dates, anything unusual. Do it now, while it is fresh.
-              </span>
-            </div>
-
+        {step === 1 && (
+          <>
             <textarea
               className="narrative"
-              rows={9}
+              rows={12}
+              autoFocus
               value={narrative}
               onChange={(e) => setNarrative(e.target.value)}
-              placeholder={'Spoke to the client this morning. Acting on the purchase of the freehold at\u2026 Agreed hourly at 280 plus VAT, capped at\u2026 Not covering the survey or tax advice. Wants to complete before\u2026'}
+              placeholder={'Spoke to the client this morning. Acting on\u2026 Agreed hourly at\u2026 Not covering\u2026 Wants to complete before\u2026'}
             />
+            <p className="prov">
+              Fees, scope, what is excluded, dates, anything unusual. Whatever you
+              would tell a colleague. {extractable.length > 0
+                && `We will look for ${extractable.length} things your documents need.`}
+            </p>
+          </>
+        )}
 
-            <div className="btn-row">
+        {step === 2 && (
+          <>
+            {extractable.length > 0 ? (
+              <>
+                <div className="readout">
+                  <strong>{filledExtract} of {extractable.length}</strong> found in your notes.
+                  Each one shows the words it came from. Nothing was assumed.
+                </div>
+                <div className="field-grid">{extractable.map((f) => field(f, { hints: false }))}</div>
+
+                {readResult?.unstated?.length > 0 && (
+                  <div className="unstated">
+                    <div className="box-title">Not mentioned</div>
+                    {readResult.unstated.map((u) => (
+                      <div className="kv" key={u.key}>
+                        <div>
+                          <div className="kv-key">{u.label || u.key}</div>
+                          <div className="prov">{u.why}</div>
+                        </div>
+                      </div>
+                    ))}
+                    <p className="prov">
+                      Fill these above, or leave them. A document will not generate
+                      until they are answered, and nothing will be guessed.
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="muted">
+                No documents uploaded yet, so nothing is being looked for beyond the
+                basics. Add some on the Documents page.
+              </p>
+            )}
+
+            {templates.length === 0 && (
+              <div className="notice warn">
+                No documents uploaded yet. Add some so this knows what to look for.
+              </div>
+            )}
+          </>
+        )}
+
+        {error && <div className="notice err">{error}</div>}
+
+        <div className="wizard-foot">
+          {step === 0 && (
+            <>
+              <button className="btn-primary" disabled={!canLeaveWho} onClick={() => setStep(1)}>
+                Continue
+              </button>
+              <button className="btn-ghost" onClick={onClose}>Cancel</button>
+              {!canLeaveWho && (
+                <span className="prov">A legal name and the type of work are the minimum.</span>
+              )}
+            </>
+          )}
+
+          {step === 1 && (
+            <>
               <button
                 className="btn-primary"
                 disabled={reading || narrative.trim().length < 30}
@@ -226,69 +303,21 @@ export default function NewMatter({ onClose, onCreated }) {
               >
                 {reading ? 'Reading your notes…' : 'Read my notes'}
               </button>
-              {extractable.length > 0 && (
-                <span className="prov">
-                  Looking for {captured} of {extractable.length} things your documents need
-                </span>
-              )}
-            </div>
-          </section>
-        )}
+              <button className="btn" onClick={() => setStep(2)}>Skip for now</button>
+              <button className="btn-ghost" onClick={() => setStep(0)}>Back</button>
+            </>
+          )}
 
-        {/* What was found, and what was not. Both matter. */}
-        {typed && (readResult || captured > 0) && extractable.length > 0 && (
-          <section className="panel-box form-group">
-            <div className="form-group-head">
-              <div className="box-title">From your notes</div>
-              <span className="prov">
-                Check each one. Nothing was assumed: anything not clearly stated is
-                left blank rather than guessed, and blank blocks generation.
-              </span>
-            </div>
-            <div className="field-grid">
-              {extractable.map((f) => renderField(f, { showHint: false }))}
-            </div>
-
-            {readResult?.unstated?.length > 0 && (
-              <div className="unstated">
-                <div className="box-title">Not mentioned</div>
-                {readResult.unstated.map((u) => (
-                  <div className="kv" key={u.key}>
-                    <div>
-                      <div className="kv-key">{u.label || u.key}</div>
-                      <div className="prov">{u.why}</div>
-                    </div>
-                  </div>
-                ))}
-                <p className="prov">
-                  Add these above, or say more in the notes and read them again.
-                </p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {typed && templates.length === 0 && (
-          <div className="notice warn">
-            No documents uploaded yet, so nothing is being looked for beyond the
-            basics. Add some on the Your documents tab.
-          </div>
-        )}
-
-        {error && <div className="notice err">{error}</div>}
-
-        {typed && (
-          <div className="form-foot">
-            <button className="btn-primary" disabled={busy || !ready} onClick={save}>
-              {busy ? 'Saving…' : 'Save client details'}
-            </button>
-            <button className="btn-ghost" onClick={onClose}>Cancel</button>
-            {!ready && (
-              <span className="prov">The client's legal name and the type of work are the minimum.</span>
-            )}
-          </div>
-        )}
+          {step === 2 && (
+            <>
+              <button className="btn-primary" disabled={busy} onClick={save}>
+                {busy ? 'Saving…' : 'Save client'}
+              </button>
+              <button className="btn-ghost" onClick={() => setStep(1)}>Back to notes</button>
+            </>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

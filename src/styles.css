@@ -548,3 +548,116 @@ textarea.tall { min-height: 230px; }
 .optional-facts { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
 .optional-facts .box-title { margin-bottom: 6px; }
 .optional-facts .prov { margin-bottom: 14px; }
+
+/* ---------------- Motion ----------------
+   One easing curve and two durations throughout, so movement reads as one
+   system rather than a collection of separate decisions. */
+:root {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fast: 140ms;
+  --slow: 320ms;
+}
+
+.side-item-btn, .tab, .btn, .btn-primary, .row, .input, input, textarea, select,
+.dropzone, .stat, .panel-box {
+  transition: background var(--fast) var(--ease),
+              border-color var(--fast) var(--ease),
+              box-shadow var(--fast) var(--ease),
+              color var(--fast) var(--ease),
+              transform var(--fast) var(--ease);
+}
+.row.clickable:hover { transform: translateX(2px); }
+.stat:hover, .panel-box:hover { box-shadow: var(--shadow-lift); }
+.btn-primary:active:not(:disabled), .btn:active:not(:disabled) { transform: translateY(1px) scale(0.995); }
+
+/* ---------------- Top bar ---------------- */
+.crumbs { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; min-width: 0; }
+.crumb-link { background: none; border: none; color: var(--muted); font-weight: 600; padding: 0; }
+.crumb-link:hover { color: var(--bright); }
+.crumb-sep { color: var(--faint); }
+.crumb-here {
+  font-family: 'Quicksand', sans-serif; font-weight: 700;
+  color: var(--nearblack); font-size: 1rem;
+}
+.compact-only { display: none; }
+@media (max-width: 760px) { .compact-only { display: flex; } }
+
+/* ---------------- Stepped form ---------------- */
+.wizard { max-width: 760px; }
+
+.steps { list-style: none; display: flex; gap: 0; margin: 0 0 26px; padding: 0; }
+.stepdot { flex: 1; position: relative; }
+.stepdot button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: none; padding: 0 0 14px; text-align: left;
+  border-bottom: 2px solid var(--line);
+  transition: border-color var(--slow) var(--ease);
+}
+.stepdot button:disabled { cursor: default; }
+.stepdot.now button { border-bottom-color: var(--bright); }
+.stepdot.done button { border-bottom-color: var(--green); }
+
+.stepnum {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 800;
+  background: var(--light); color: var(--faint);
+  transition: background var(--slow) var(--ease), color var(--slow) var(--ease);
+}
+.stepdot.now .stepnum { background: var(--bright); color: #fff; }
+.stepdot.done .stepnum { background: var(--green-bg); color: var(--green); }
+.steplabel { font-size: 0.84rem; color: var(--faint); font-weight: 600; }
+.stepdot.now .steplabel { color: var(--nearblack); font-weight: 700; }
+.stepdot.done .steplabel { color: var(--muted); }
+
+.wizard-body {
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: 30px 32px; box-shadow: var(--shadow);
+  animation: stepIn var(--slow) var(--ease) both;
+}
+@keyframes stepIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.wizard-head { margin-bottom: 24px; }
+.wizard-head h2 { font-size: 1.35rem; color: var(--nearblack); margin-bottom: 5px; }
+.wizard-sub {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--muted); font-weight: 800; margin: 26px 0 14px;
+  padding-top: 20px; border-top: 1px solid var(--line-soft);
+}
+.wizard-foot {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line);
+}
+
+.wizard .narrative {
+  min-height: 260px; border-radius: 14px; padding: 18px 20px;
+  font-size: 0.95rem; line-height: 1.75;
+}
+.readout {
+  background: var(--light); border-radius: 12px; padding: 13px 16px;
+  font-size: 0.88rem; color: var(--steel); margin-bottom: 20px; line-height: 1.55;
+}
+.readout strong { color: var(--nearblack); }
+
+/* Fields settle in rather than appearing all at once, which reads as the form
+   filling itself in front of you. */
+.wizard .field-grid .field { animation: fieldIn var(--slow) var(--ease) both; }
+.wizard .field-grid .field:nth-child(1) { animation-delay: 20ms; }
+.wizard .field-grid .field:nth-child(2) { animation-delay: 45ms; }
+.wizard .field-grid .field:nth-child(3) { animation-delay: 70ms; }
+.wizard .field-grid .field:nth-child(4) { animation-delay: 95ms; }
+.wizard .field-grid .field:nth-child(5) { animation-delay: 120ms; }
+.wizard .field-grid .field:nth-child(6) { animation-delay: 145ms; }
+.wizard .field-grid .field:nth-child(n+7) { animation-delay: 170ms; }
+@keyframes fieldIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 640px) {
+  .steplabel { display: none; }
+  .stepdot button { justify-content: center; padding-bottom: 12px; }
+  .wizard-body { padding: 22px 20px; }
+}

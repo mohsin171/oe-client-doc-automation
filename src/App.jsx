@@ -16,9 +16,24 @@ const STATUS_LABEL = {
   closed: 'Closed',
 };
 
+// Three destinations. Adding a client is an action taken on the client list,
+// not a place you navigate to, so it does not belong in the navigation.
+const NAV = [
+  { key: 'clients', label: 'Clients' },
+  { key: 'templates', label: 'Documents' },
+  { key: 'team', label: 'Team', ownerOnly: true },
+];
+
+const TITLES = {
+  clients: 'Clients',
+  new: 'New client',
+  templates: 'Your documents',
+  team: 'Team',
+};
+
 export default function App() {
   const [session, setSession] = useState({ loading: true });
-  const [tab, setTab] = useState('queue');
+  const [tab, setTab] = useState('clients');
   const [matterId, setMatterId] = useState(null);
   const [documentId, setDocumentId] = useState(null);
   const [matters, setMatters] = useState([]);
@@ -53,6 +68,7 @@ export default function App() {
   }, [loadSession]);
 
   function backToQueue() { setMatterId(null); setDocumentId(null); loadMatters(); }
+  function go(next) { setMatterId(null); setDocumentId(null); setTab(next); loadMatters(); }
   function openMatter(id) { setDocumentId(null); setMatterId(id); }
 
   async function signOut() {
@@ -84,8 +100,8 @@ export default function App() {
   if (tab === 'new') {
     view = (
       <NewMatter
-        onClose={() => { setTab('queue'); loadMatters(); }}
-        onCreated={(id) => { setTab('queue'); loadMatters(); openMatter(id); }}
+        onClose={() => go('clients')}
+        onCreated={(id) => { setTab('clients'); loadMatters(); openMatter(id); }}
       />
     );
   } else if (documentId) {
@@ -101,7 +117,7 @@ export default function App() {
       <Queue
         matters={matters}
         onOpenMatter={openMatter}
-        onNewMatter={() => { setMatterId(null); setDocumentId(null); setTab('new'); }}
+        onNewMatter={() => go('new')}
       />
     );
   }
@@ -120,33 +136,18 @@ export default function App() {
 
           <div className="side-section">
             <div className="side-label">Workspace</div>
-            <button
-              className={onQueue && tab === 'queue' ? 'side-item-btn active' : 'side-item-btn'}
-              onClick={() => { backToQueue(); setTab('queue'); }}
-            >
-              <span className="side-item-label">Queue</span>
-              <span className="side-count">{matters.length || ''}</span>
-            </button>
-            <button
-              className={tab === 'new' ? 'side-item-btn active' : 'side-item-btn'}
-              onClick={() => { setMatterId(null); setDocumentId(null); setTab('new'); }}
-            >
-              <span className="side-item-label">Client details</span>
-            </button>
-            <button
-              className={onQueue && tab === 'templates' ? 'side-item-btn active' : 'side-item-btn'}
-              onClick={() => { backToQueue(); setTab('templates'); }}
-            >
-              <span className="side-item-label">Your documents</span>
-            </button>
-            {isOwner && (
+            {NAV.filter((n) => !n.ownerOnly || isOwner).map((n) => (
               <button
-                className={onQueue && tab === 'team' ? 'side-item-btn active' : 'side-item-btn'}
-                onClick={() => { backToQueue(); setTab('team'); }}
+                key={n.key}
+                className={onQueue && tab === n.key ? 'side-item-btn active' : 'side-item-btn'}
+                onClick={() => go(n.key)}
               >
-                <span className="side-item-label">Team</span>
+                <span className="side-item-label">{n.label}</span>
+                {n.key === 'clients' && matters.length > 0 && (
+                  <span className="side-count">{matters.length}</span>
+                )}
               </button>
-            )}
+            ))}
           </div>
 
           {matters.length > 0 && (
@@ -174,36 +175,36 @@ export default function App() {
 
       <div className="workspace">
         <header className="topnav">
-          <nav className="topnav-tabs">
-            <button
-              className={onQueue && tab === 'queue' ? 'tab active' : 'tab'}
-              onClick={() => { backToQueue(); setTab('queue'); }}
-            >
-              Queue
-            </button>
-            <button
-              className={tab === 'new' ? 'tab active' : 'tab'}
-              onClick={() => { setMatterId(null); setDocumentId(null); setTab('new'); }}
-            >
-              Client details
-            </button>
-            <button
-              className={onQueue && tab === 'templates' ? 'tab active' : 'tab'}
-              onClick={() => { backToQueue(); setTab('templates'); }}
-            >
-              Your documents
-            </button>
-            {isOwner && (
-              <button
-                className={onQueue && tab === 'team' ? 'tab active' : 'tab'}
-                onClick={() => { backToQueue(); setTab('team'); }}
-              >
-                Team
-              </button>
+          <div className="crumbs">
+            {(matterId || documentId) ? (
+              <>
+                <button className="crumb-link" onClick={backToQueue}>Clients</button>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-here">{documentId ? 'Document' : 'Client file'}</span>
+              </>
+            ) : (
+              <span className="crumb-here">{TITLES[tab] || ''}</span>
             )}
+          </div>
+
+          {/* The navigation lives in the sidebar. Below the sidebar breakpoint
+              it has nowhere to be, so it appears here instead. */}
+          <nav className="topnav-tabs compact-only">
+            {NAV.filter((n) => !n.ownerOnly || isOwner).map((n) => (
+              <button
+                key={n.key}
+                className={onQueue && tab === n.key ? 'tab active' : 'tab'}
+                onClick={() => go(n.key)}
+              >
+                {n.label}
+              </button>
+            ))}
           </nav>
 
           <div className="who">
+            {onQueue && tab === 'clients' && (
+              <button className="btn-primary btn-sm" onClick={() => go('new')}>New client</button>
+            )}
             <button className="btn btn-sm" onClick={signOut}>Sign out</button>
           </div>
         </header>
