@@ -6,9 +6,9 @@
   "description": "Orca Edge Tool 2: Document Generation & Review Automation",
   "scripts": {
     "dev": "vite",
-    "build": "eslint api lib src && node scripts/check-modules.mjs && vite build",
+    "build": "eslint api lib src && node scripts/check-modules.mjs && node scripts/check-sql.mjs && vite build",
     "preview": "vite preview",
-    "check": "eslint api lib src && node scripts/check-modules.mjs"
+    "check": "eslint api lib src && node scripts/check-modules.mjs && node scripts/check-sql.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

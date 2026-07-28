@@ -575,7 +575,7 @@ export default async function handler(req, res) {
       const documentId = Number(body.documentId);
 
       const rows = await sql`
-        SELECT d.*, m.reference, m.matter_id AS mid, m.assigned_user_id,
+        SELECT d.*, m.reference, m.assigned_user_id,
                c.legal_name AS client_name, c.address AS client_address, c.email AS client_email
         FROM documents d
         JOIN matters m ON m.id = d.matter_id
@@ -637,7 +637,7 @@ export default async function handler(req, res) {
 
       await recordSend({
         documentVersionId: version.id,
-        matterId: document.mid,
+        matterId: document.matter_id,
         sentBy: ctx.user_id,
         toEmail: to,
         subject,
@@ -646,7 +646,7 @@ export default async function handler(req, res) {
       });
 
       await logEvent({
-        firmId: ctx.firm_id, matterId: document.mid, documentId, actorId: ctx.user_id,
+        firmId: ctx.firm_id, matterId: document.matter_id, documentId, actorId: ctx.user_id,
         kind: 'document_sent',
         payload: { to, subject, version: version.version, from: result.from },
       });
