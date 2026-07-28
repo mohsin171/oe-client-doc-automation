@@ -12,7 +12,7 @@ import {
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
-import { generate } from '../lib/engine.js';
+import { generate, runDeterministicRules } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS } from '../lib/fields.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
 
@@ -20,6 +20,62 @@ function valuesFrom(fields) {
   const out = {};
   for (const f of fields) out[canonicalKey(f.key)] = f.value;
   return out;
+}
+
+// Run the firm's own checks over a letter again and reconcile them with what
+// is already on the record.
+//
+// Three rules govern the reconciliation. A judgement a person already made is
+// not undone by a re-run: a flag they resolved or dismissed stays that way, with
+// their reason. A problem that has gone away is removed rather than left sitting
+// there. And a problem that has appeared is raised, open, so it has to be
+// answered before sign-off.
+async function recheck({ ctx, documentId, version, blocks }) {
+  const docRows = await sql`
+    SELECT template_id FROM documents
+    WHERE firm_id = ${ctx.firm_id} AND id = ${documentId} LIMIT 1`;
+  if (!docRows[0]?.template_id) return;
+
+  const template = await getTemplate(ctx.firm_id, docRows[0].template_id);
+  if (!template) return;
+
+  const values = version.merged_values || {};
+  const found = runDeterministicRules(template.definition || {}, blocks, values);
+
+  const existing = await sql`
+    SELECT * FROM flags WHERE document_version_id = ${version.id}`;
+
+  const keyOf = (f) => `${f.code}:${f.anchor || ''}`;
+  const settled = new Map(
+    existing.filter((f) => f.status !== 'open').map((f) => [keyOf(f), f])
+  );
+  const stillFound = new Set(found.map(keyOf));
+
+  // Anything the model raised is left alone: this pass only owns the firm's
+  // own deterministic checks, and re-running the model on every keystroke
+  // would be slow and would produce different opinions each time.
+  const deterministicCodes = new Set(found.map((f) => f.code));
+
+  for (const f of existing) {
+    if (f.status !== 'open') continue;
+    if (stillFound.has(keyOf(f))) continue;
+    // An open check whose problem no longer exists.
+    if (deterministicCodes.has(f.code) || f.code === 'standard_clause_amended') continue;
+    await sql`DELETE FROM flags WHERE id = ${f.id}`;
+  }
+
+  const openNow = new Set(
+    (await sql`SELECT code, anchor FROM flags WHERE document_version_id = ${version.id}`)
+      .map((f) => `${f.code}:${f.anchor || ''}`)
+  );
+
+  for (const f of found) {
+    const key = keyOf(f);
+    if (openNow.has(key) || settled.has(key)) continue;
+    await sql`
+      INSERT INTO flags (document_version_id, severity, code, message, anchor)
+      VALUES (${version.id}, ${f.severity}, ${f.code}, ${f.message}, ${f.anchor || null})`;
+  }
 }
 
 // UK convention: title plus surname, or Sirs for a company.
@@ -298,6 +354,12 @@ export default async function handler(req, res) {
 
       await sql`
         UPDATE document_versions SET blocks = ${JSON.stringify(blocks)} WHERE id = ${version.id}`;
+
+      // Re-examine the letter. Checks used to run once, at generation, so a
+      // clean draft could be edited to say anything and signed off with nothing
+      // looking at it again. The edit is exactly the moment a figure gets
+      // changed by hand.
+      await recheck({ ctx, documentId: Number(body.documentId), version, blocks });
 
       // A person may change anything in a letter they are about to put their
       // name to. The rule was always that the model cannot alter a standard
