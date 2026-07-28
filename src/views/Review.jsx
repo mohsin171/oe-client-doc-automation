@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import DocumentForm from './DocumentForm.jsx';
+import DocumentFinal from './DocumentFinal.jsx';
 
 // The document screen is a thin shell now: it loads, holds the editing state,
 // and performs the actions. How the letter looks belongs in DocumentForm.
@@ -31,6 +32,40 @@ export default function Review({ documentId, onBack }) {
   if (state.error) return <div className="notice err">{state.error}</div>;
 
   const { document: doc, version, flags = [], approvals = [], me, firm, salutation } = state;
+
+  // Signed off is a different screen, not the same screen with its controls
+  // hidden. The working view carries checks, edit tools and marks showing which
+  // passages the model wrote; none of that is the letter.
+  const signedOff = ['approved', 'issued'].includes(doc.status);
+
+  if (signedOff) {
+    return (
+      <>
+        {error && <div className="notice err">{error}</div>}
+        <DocumentFinal
+          doc={doc}
+          version={version}
+          firm={firm}
+          salutation={salutation}
+          approvals={approvals}
+          busy={busy}
+          onSend={() => setSending(true)}
+          onIssue={() => run('issue', () => api.issue({ documentId }))}
+          onReopen={() => run('reopen', () => api.reopen({ documentId }))}
+          onBack={onBack}
+        />
+        {sending && (
+          <SendToClient
+            doc={doc}
+            firm={firm}
+            salutation={salutation}
+            documentId={documentId}
+            onClose={() => setSending(false)}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>

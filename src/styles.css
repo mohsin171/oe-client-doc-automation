@@ -1280,3 +1280,26 @@ textarea.tall { min-height: 230px; }
 }
 .df-confirm .ack { margin: 0; padding: 14px 18px; font-size: 0.9rem; }
 .df-confirm .ack-text { font-weight: 600; }
+
+/* ---- The final document ---- */
+.final { max-width: 940px; margin: 0 auto; }
+.final-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 16px;
+}
+.final-bar .back { margin-bottom: 0; }
+.final-letter { max-width: none; padding: 56px 64px 48px; }
+.final-letter .sig-pad { height: 92px; background: transparent; padding: 0 0 26px; }
+.final-letter .sig-pad.short { max-width: 220px; }
+.final-letter .sig-rule { left: 0; right: 0; bottom: 22px; }
+.final-letter .sig-label {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.82rem;
+  color: var(--muted); font-weight: 700;
+}
+.final-foot {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  margin-top: 20px; padding: 20px 24px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+.final-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

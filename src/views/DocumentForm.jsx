@@ -15,7 +15,7 @@ export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me,
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
-  onApprove, onIssue, onReopen, onSend, onBack,
+  onApprove, onBack,
 }) {
   const [tab, setTab] = useState('agreement');
   // One deliberate confirmation before sign-off, rather than a tick against
@@ -27,7 +27,6 @@ export default function DocumentForm({
 
   const branding = firm?.branding || {};
   const parts = layoutLetter(version?.blocks || []);
-  const locked = ['approved', 'issued'].includes(doc.status);
   const open = (flags || []).filter((f) => f.status === 'open');
   const blocking = open.filter((f) => f.severity === 'blocking');
   const flagged = new Set(open.map((f) => f.anchor));
@@ -96,7 +95,7 @@ export default function DocumentForm({
 
       {tab === 'agreement' && (
         <div className="df-body">
-          {!locked && open.length > 0 && (
+          {open.length > 0 && (
             <div className="df-checks">
               <div className="box-title">
                 {blocking.length > 0
@@ -127,7 +126,7 @@ export default function DocumentForm({
                   </div>
                   {dismissing !== f.id && (
                     <div className="check-side">
-                      {f.fixIn && parts.body.some((b) => b.key === f.fixIn) && !locked && (
+                      {f.fixIn && parts.body.some((b) => b.key === f.fixIn) && (
                         <button
                           className="btn btn-sm"
                           onClick={() => {
@@ -171,7 +170,7 @@ export default function DocumentForm({
                 <div className="df-marks">
                   {b.kind === 'bespoke' && <span className="mark-ai">written for this matter</span>}
                   {b.amended && <span className="mark-amended">standard clause changed</span>}
-                  {!locked && editing !== b.key && (
+                  {editing !== b.key && (
                     <button
                       className="btn-ghost"
                       onClick={() => { setEditing(b.key); setEditText(b.body || ''); }}
@@ -199,8 +198,7 @@ export default function DocumentForm({
             </section>
           ))}
 
-          {!locked && (
-            <section className="df-section df-confirm">
+          <section className="df-section df-confirm">
               <label className={confirmed ? 'ack on' : 'ack'}>
                 <input
                   type="checkbox"
@@ -212,8 +210,7 @@ export default function DocumentForm({
                   I have read this letter in full and confirm it is correct to send.
                 </span>
               </label>
-            </section>
-          )}
+          </section>
 
           <section className="df-section df-signature">
             <div className="sig-grid">
@@ -242,24 +239,7 @@ export default function DocumentForm({
       <footer className="df-foot">
         <button className="btn" onClick={onBack}>Back</button>
 
-        {approvals.length > 0 ? (
-          <>
-            <span className="signed-inline">
-              Signed off by {approvals[0].approver_name} ·{' '}
-              {new Date(approvals[0].approved_at).toLocaleString('en-GB')}
-            </span>
-            <div className="df-foot-right">
-              <a className="btn-primary" href={api.downloadUrl(doc.id, 'pdf')}>Download PDF</a>
-              <button className="btn" onClick={onSend}>Send to client</button>
-              {doc.status === 'approved' && (
-                <button className="btn" disabled={busy === 'issue'} onClick={onIssue}>Mark issued</button>
-              )}
-              <button className="btn-ghost" disabled={busy === 'reopen'} onClick={onReopen}>
-                {doc.status === 'issued' ? 'Revise' : 'Reopen'}
-              </button>
-            </div>
-          </>
-        ) : me?.canApprove ? (
+        {me?.canApprove ? (
           <div className="df-foot-right">
             {blocking.length > 0 ? (
               <span className="prov">{blocking.length} to clear first</span>
