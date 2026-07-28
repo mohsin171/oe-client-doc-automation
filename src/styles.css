@@ -1222,27 +1222,22 @@ textarea.tall { min-height: 230px; }
 .sig-label { display: block; font-size: 0.9rem; font-weight: 700; color: var(--nearblack); margin-bottom: 9px; }
 .sig-label em { color: var(--red); font-style: normal; }
 .sig-pad {
-  position: relative; background: var(--canvas); border-radius: 10px; height: 190px;
-  display: flex; align-items: flex-end; padding: 0 24px 42px;
+  position: relative; background: var(--canvas); border-radius: 10px; height: 120px;
+  display: flex; align-items: flex-end; padding: 0 24px 34px;
 }
-.sig-canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
-.sig-rule { position: absolute; left: 24px; right: 24px; bottom: 38px; height: 1px; background: #C6CFD9; }
+.sig-rule { position: absolute; left: 24px; right: 24px; bottom: 30px; height: 1px; background: #C6CFD9; }
+/* A large italic serif rather than a script face. A cursive font imitating
+   handwriting on a solicitor's letter reads as a novelty, and it convinces
+   nobody: it is plainly not handwriting. An italic of the letter's own serif
+   looks like a considered mark and belongs to the document's typography. */
 .sig-typed {
   width: 100%; border: none; background: transparent; padding: 0 0 10px;
-  font-family: 'Snell Roundhand', 'Segoe Script', cursive; font-size: 2rem; color: var(--nearblack);
-  position: relative; z-index: 1;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic; font-size: 1.7rem; letter-spacing: 0.01em;
+  color: var(--nearblack); position: relative; z-index: 1;
 }
+.sig-typed::placeholder { font-style: normal; font-size: 0.9rem; color: var(--faint); }
 .sig-typed:focus { outline: none; box-shadow: none; background: transparent; }
-.sig-clear {
-  position: absolute; left: 20px; bottom: 8px; z-index: 2;
-  background: none; border: none; color: var(--muted); font-size: 1.1rem; line-height: 1;
-}
-.sig-modes { display: flex; gap: 18px; justify-content: flex-end; margin-top: 10px; }
-.sig-modes button {
-  background: none; border: none; font-size: 0.88rem; color: var(--muted);
-  padding: 2px 0; border-bottom: 2px solid transparent;
-}
-.sig-modes button.on { color: var(--nearblack); border-bottom-color: var(--steel); }
 .sig-date { background: var(--canvas); border-radius: 10px; padding: 13px 15px; font-size: 0.92rem; }
 
 /* ---- Footer bar ---- */

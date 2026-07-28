@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { api } from '../api.js';
 import FirmMark from './FirmMark.jsx';
 import { layoutLetter, isFurniture, headingFor } from '../../lib/letter.js';
@@ -10,77 +10,6 @@ import { layoutLetter, isFurniture, headingFor } from '../../lib/letter.js';
 // The reason for a tick per section rather than one signature at the end: if a
 // client later says nobody explained the fee cap, a tick against that clause
 // answers it. A signature on page six does not.
-
-function SignaturePad({ value, onChange, mode }) {
-  const canvasRef = useRef(null);
-  const drawing = useRef(false);
-
-  useEffect(() => {
-    if (mode !== 'draw') return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ratio = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    const ctx = canvas.getContext('2d');
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 1.8;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#0F1826';
-  }, [mode]);
-
-  function pos(e) {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const p = e.touches ? e.touches[0] : e;
-    return { x: p.clientX - rect.left, y: p.clientY - rect.top };
-  }
-
-  const start = (e) => {
-    e.preventDefault();
-    drawing.current = true;
-    const ctx = canvasRef.current.getContext('2d');
-    const { x, y } = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  };
-  const move = (e) => {
-    if (!drawing.current) return;
-    e.preventDefault();
-    const ctx = canvasRef.current.getContext('2d');
-    const { x, y } = pos(e);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-  const end = () => {
-    if (!drawing.current) return;
-    drawing.current = false;
-    onChange(canvasRef.current.toDataURL('image/png'));
-  };
-
-  if (mode === 'type') {
-    return (
-      <input
-        className="sig-typed"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Type your name"
-        aria-label="Typed signature"
-      />
-    );
-  }
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="sig-canvas"
-      onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
-      onTouchStart={start} onTouchMove={move} onTouchEnd={end}
-      aria-label="Draw your signature"
-    />
-  );
-}
 
 export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me,
@@ -94,10 +23,7 @@ export default function DocumentForm({
   // agreeing to their own firm's terms, which is not what is happening: they
   // are confirming they have read what they are about to put their name to.
   const [confirmed, setConfirmed] = useState(false);
-  const [sigMode, setSigMode] = useState('draw');
   const [sig, setSig] = useState('');
-  const [first, setFirst] = useState('');
-  const [last, setLast] = useState('');
 
   const branding = firm?.branding || {};
   const parts = layoutLetter(version?.blocks || []);
@@ -292,17 +218,16 @@ export default function DocumentForm({
           <section className="df-section df-signature">
             <div className="sig-grid">
               <div>
-                <label className="sig-label">Client <em>*</em></label>
+                <label className="sig-label" htmlFor="sig-name">Signature <em>*</em></label>
                 <div className="sig-pad">
-                  <SignaturePad value={sig} onChange={setSig} mode={sigMode} />
+                  <input
+                    id="sig-name"
+                    className="sig-typed"
+                    value={sig}
+                    onChange={(e) => setSig(e.target.value)}
+                    placeholder="Type your full name"
+                  />
                   <span className="sig-rule" />
-                  {sig && (
-                    <button className="sig-clear" onClick={() => setSig('')} aria-label="Clear signature">×</button>
-                  )}
-                </div>
-                <div className="sig-modes">
-                  <button className={sigMode === 'draw' ? 'on' : ''} onClick={() => { setSigMode('draw'); setSig(''); }}>draw</button>
-                  <button className={sigMode === 'type' ? 'on' : ''} onClick={() => { setSigMode('type'); setSig(''); }}>type</button>
                 </div>
               </div>
               <div>
@@ -311,13 +236,7 @@ export default function DocumentForm({
               </div>
             </div>
 
-            <label className="sig-label">Print name <em>*</em></label>
-            <div className="name-grid">
-              <input value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First" />
-              <input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last" />
-            </div>
-
-            <p className="prov" style={{ marginTop: 14 }}>
+            <p className="prov">
               The client completes this part. What you type here is not stored.
             </p>
           </section>
