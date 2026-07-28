@@ -683,3 +683,132 @@ textarea.tall { min-height: 230px; }
   background: linear-gradient(135deg, var(--bright), var(--steel));
   color: #fff; font-size: 0.72rem; font-weight: 800;
 }
+
+/* ============================================================================
+   FORM POLISH
+   Glow is used where it carries meaning: what has focus, which step you are on,
+   and whether a value came from your notes. Decoration that does not tell you
+   something is just noise on a screen people use all day.
+   ============================================================================ */
+
+/* ---- Focus: a halo that grows rather than snapping on ---- */
+.wizard input,
+.wizard textarea,
+.wizard select {
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  transition:
+    border-color 180ms var(--ease),
+    box-shadow 260ms var(--ease),
+    background 180ms var(--ease);
+}
+.wizard input:hover:not(:focus),
+.wizard textarea:hover:not(:focus),
+.wizard select:hover:not(:focus) { border-color: #C3D8EC; }
+
+.wizard input:focus,
+.wizard textarea:focus,
+.wizard select:focus {
+  outline: none;
+  border-color: var(--bright);
+  background: #FFFFFF;
+  box-shadow:
+    0 0 0 3px rgba(69, 146, 220, 0.14),
+    0 0 18px rgba(69, 146, 220, 0.22),
+    0 1px 2px rgba(15, 24, 38, 0.04);
+}
+
+/* The label lifts with its field, so the eye follows one thing. */
+.wizard .field { transition: transform 200ms var(--ease); }
+.wizard .field:focus-within { transform: translateY(-1px); }
+.wizard .field:focus-within > label span { color: var(--steel); }
+.wizard .field > label span { transition: color 180ms var(--ease); }
+
+/* ---- The notes box, which is the centrepiece of the whole form ---- */
+.wizard .narrative {
+  position: relative;
+  background:
+    linear-gradient(#FFFFFF, #FFFFFF) padding-box,
+    linear-gradient(135deg, var(--line), var(--line)) border-box;
+  border: 1.5px solid transparent;
+  transition: box-shadow 320ms var(--ease), background 320ms var(--ease);
+}
+.wizard .narrative:focus {
+  background:
+    linear-gradient(#FFFFFF, #FFFFFF) padding-box,
+    linear-gradient(135deg, var(--bright), var(--steel), var(--bright)) border-box;
+  box-shadow: 0 0 26px rgba(69, 146, 220, 0.20), 0 8px 26px rgba(15, 24, 38, 0.06);
+}
+
+/* ---- Steps: the current one glows, finished ones settle ---- */
+.stepdot.now .stepnum {
+  box-shadow: 0 0 0 4px rgba(69, 146, 220, 0.14), 0 0 16px rgba(69, 146, 220, 0.42);
+  animation: stepPulse 2.6s ease-in-out infinite;
+}
+@keyframes stepPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(69,146,220,0.14), 0 0 14px rgba(69,146,220,0.34); }
+  50%      { box-shadow: 0 0 0 5px rgba(69,146,220,0.18), 0 0 22px rgba(69,146,220,0.50); }
+}
+.stepdot button { position: relative; }
+.stepdot button::after {
+  content: ''; position: absolute; left: 0; bottom: -2px; height: 2px; width: 0;
+  background: linear-gradient(90deg, var(--bright), var(--steel));
+  transition: width 420ms var(--ease);
+}
+.stepdot.now button::after, .stepdot.done button::after { width: 100%; }
+.stepdot.done button::after { background: var(--green); }
+
+/* ---- The card ---- */
+.wizard-body {
+  position: relative;
+  border-color: rgba(56, 117, 174, 0.14);
+}
+.wizard-body::before {
+  content: ''; position: absolute; inset: -1px; border-radius: 19px; z-index: -1;
+  background: linear-gradient(135deg, rgba(69,146,220,0.16), transparent 42%, rgba(56,117,174,0.12));
+  opacity: 0; transition: opacity 420ms var(--ease);
+}
+.wizard-body:focus-within::before { opacity: 1; }
+
+/* ---- Buttons ---- */
+.wizard .btn-primary { position: relative; overflow: hidden; }
+.wizard .btn-primary:hover:not(:disabled) {
+  box-shadow: 0 10px 30px rgba(69, 146, 220, 0.40), 0 0 0 1px rgba(69, 146, 220, 0.20);
+}
+.wizard .btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+}
+.wizard .btn-primary:hover:not(:disabled)::after {
+  animation: sheen 780ms var(--ease);
+}
+@keyframes sheen { to { transform: translateX(120%); } }
+
+/* ---- A value read from the notes announces itself once ---- */
+.from-notes { animation: badgeIn 380ms var(--ease) both; }
+@keyframes badgeIn {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+.quote { animation: quoteIn 420ms var(--ease) both; }
+@keyframes quoteIn {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 90px; }
+}
+.field:has(.from-notes) input,
+.field:has(.from-notes) textarea,
+.field:has(.from-notes) select {
+  border-color: rgba(69, 146, 220, 0.42);
+  background: rgba(69, 146, 220, 0.03);
+}
+
+/* ---- The signed-in row ---- */
+.assigned-to { transition: border-color 180ms var(--ease), box-shadow 180ms var(--ease); }
+.assigned-to:hover { border-color: rgba(56,117,174,0.28); box-shadow: 0 0 14px rgba(69,146,220,0.10); }
+
+/* Everything above is suppressed for anyone who asks for less movement. */
+@media (prefers-reduced-motion: reduce) {
+  .stepdot.now .stepnum { animation: none; }
+  .wizard .btn-primary::after { display: none; }
+}
