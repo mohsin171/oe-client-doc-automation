@@ -1423,3 +1423,65 @@ textarea.tall { min-height: 230px; }
   .sheet-date { padding-top: 0; }
   .sheet-contacts { grid-template-columns: 1fr; padding: 20px 24px; }
 }
+
+/* Recording the client's signature on the finished letter. */
+.sheet-sigedit { max-width: 420px; }
+.sheet-hand-input {
+  width: 100%; border: none; background: transparent; padding: 0 0 4px;
+  font-family: 'Allura', Georgia, serif; font-size: 2.4rem; line-height: 1.15;
+  color: var(--nearblack);
+}
+.sheet-hand-input:focus { outline: none; box-shadow: none; background: transparent; }
+.sheet-hand-input::placeholder {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.85rem; color: var(--faint);
+}
+.sheet-siglabel { display: flex; align-items: center; gap: 10px; }
+.sheet-siglabel span {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.72rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+}
+.sheet-siglabel input { padding: 7px 10px; font-size: 0.85rem; width: auto; }
+
+/* ---- The send drawer ---- */
+.drawer-scrim {
+  position: fixed; inset: 0; z-index: 110; background: rgba(6,11,20,0.34);
+  animation: fade 160ms var(--ease);
+}
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 120;
+  width: 100%; max-width: 520px; background: var(--card);
+  border-left: 1px solid var(--line); box-shadow: -20px 0 60px rgba(6,11,20,0.18);
+  display: flex; flex-direction: column;
+  animation: slideIn 280ms var(--ease) both;
+}
+@keyframes slideIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.drawer-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 20px 24px; border-bottom: 1px solid var(--line);
+}
+.drawer-title { font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--nearblack); }
+
+.drawer-summary { padding: 16px 24px; background: var(--canvas); border-bottom: 1px solid var(--line); }
+.drawer-summary .kv { padding: 8px 0; }
+
+.drawer-thread { flex: 1; overflow-y: auto; padding: 16px 24px; min-height: 90px; }
+.msg { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.msg:last-child { border-bottom: none; }
+.msg-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.msg-head strong { font-size: 0.88rem; color: var(--nearblack); }
+.msg-subject { font-size: 0.85rem; font-weight: 600; color: var(--ink); margin-top: 4px; }
+.msg-body {
+  font-size: 0.83rem; color: var(--muted); line-height: 1.6;
+  margin-top: 6px; white-space: pre-wrap;
+}
+
+.drawer-compose {
+  padding: 18px 24px 22px; border-top: 1px solid var(--line);
+  background: var(--card); max-height: 62vh; overflow-y: auto;
+}
+.drawer-compose .field { margin-bottom: 12px; }
+
+@media (max-width: 560px) {
+  .drawer { max-width: none; }
+}

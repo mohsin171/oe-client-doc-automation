@@ -8,13 +8,15 @@ import { sql } from '../lib/db.js';
 import {
   getMatter, getMatterFields, getTemplate, getPrecedents, assessCompleteness,
   listDocuments, listAllDocuments, createDocument, addDocumentVersion, getCurrentVersion,
-  canSeeMatter,
+  canSeeMatter, recordSend,
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
 import { generate, runDeterministicRules, isVerifiable } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS, fieldMeta } from '../lib/fields.js';
 import { fixTargetFor } from '../lib/letter.js';
+import { renderLetterPdf } from '../lib/pdf.js';
+import { sendDocumentEmail, emailConfigured } from '../lib/email.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
 
 function valuesFrom(fields) {
@@ -202,6 +204,18 @@ export default async function handler(req, res) {
         fixIn: fixTargetFor(f, blocks),
       }));
 
+      const sends = await sql`
+        SELECT s.id, s.to_email, s.subject, s.cover_note, s.method, s.sent_at,
+               u.name AS sent_by_name, u.email AS sent_by_email
+        FROM sends s JOIN users u ON u.id = s.sent_by
+        WHERE s.matter_id = ${document.matter_id}
+        ORDER BY s.sent_at DESC`;
+
+      const assigned = await sql`
+        SELECT u.name, u.email FROM matters m
+        JOIN users u ON u.id = m.assigned_user_id
+        WHERE m.id = ${document.matter_id} LIMIT 1`;
+
       const approvals = await sql`
         SELECT a.*, u.name AS approver_name FROM approvals a
         JOIN users u ON u.id = a.user_id
@@ -209,7 +223,9 @@ export default async function handler(req, res) {
         ORDER BY a.approved_at DESC`;
 
       return ok(res, {
-        document, version, flags, approvals,
+        document, version, flags, approvals, sends,
+        sender: assigned[0] || { name: ctx.name, email: ctx.email },
+        canSend: emailConfigured(),
         firm: {
           name: ctx.firm_name,
           branding: ctx.branding || {},
@@ -552,6 +568,95 @@ export default async function handler(req, res) {
         kind: 'document_reopened', payload: { version: rows[0].current_version },
       });
       return ok(res, { reopened: true, version: rows[0].current_version });
+    }
+
+    // ---------------- Send to the client ----------------
+    if (action === 'send') {
+      const documentId = Number(body.documentId);
+
+      const rows = await sql`
+        SELECT d.*, m.reference, m.matter_id AS mid, m.assigned_user_id,
+               c.legal_name AS client_name, c.address AS client_address, c.email AS client_email
+        FROM documents d
+        JOIN matters m ON m.id = d.matter_id
+        JOIN clients c ON c.id = m.client_id
+        WHERE d.firm_id = ${ctx.firm_id} AND d.id = ${documentId} LIMIT 1`;
+      const document = rows[0];
+      if (!document) return bad(res, 'Document not found', 404);
+
+      // Only a signed-off letter leaves the firm. Enforced here rather than by
+      // hiding a button, since a send is the one action that cannot be undone.
+      if (!['approved', 'issued'].includes(document.status)) {
+        return bad(res, 'This letter has not been signed off yet.', 409);
+      }
+
+      const to = String(body.to || document.client_email || '').trim();
+      if (!to) return bad(res, 'No email address for this client.', 422);
+
+      const version = await getCurrentVersion(ctx.firm_id, documentId);
+      if (!version) return bad(res, 'No version found', 404);
+
+      // The letter is attached as it stands, generated now rather than trusting
+      // a file someone downloaded earlier and may have edited.
+      const pdf = await renderLetterPdf({
+        document,
+        version,
+        firm: { name: ctx.firm_name, branding: ctx.branding || {} },
+        salutation: salutationFor(document.client_name),
+        dateText: new Date().toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        }),
+      });
+
+      const sender = document.assigned_user_id
+        ? (await sql`SELECT name, email FROM users WHERE id = ${document.assigned_user_id} LIMIT 1`)[0]
+        : { name: ctx.name, email: ctx.email };
+
+      const filename = `${document.doc_type}-${document.reference.replace(/\//g, '-')}.pdf`;
+      const subject = String(body.subject || '').trim()
+        || `${ctx.firm_name}: your engagement letter (${document.reference})`;
+
+      const result = await sendDocumentEmail({
+        to,
+        replyTo: sender?.email,
+        fromName: `${sender?.name || ctx.name}, ${ctx.firm_name}`,
+        subject,
+        body: String(body.note || ''),
+        attachment: pdf,
+        filename,
+      });
+
+      if (!result.sent) {
+        const messages = {
+          not_configured: 'Email is not connected. Add RESEND_API_KEY and redeploy.',
+          no_recipient: 'No email address for this client.',
+          provider_error: `The mail provider refused it: ${result.detail || 'no detail given'}`,
+        };
+        return bad(res, messages[result.reason] || 'Could not send', 502);
+      }
+
+      await recordSend({
+        documentVersionId: version.id,
+        matterId: document.mid,
+        sentBy: ctx.user_id,
+        toEmail: to,
+        subject,
+        coverNote: String(body.note || ''),
+        method: 'in_app',
+      });
+
+      await logEvent({
+        firmId: ctx.firm_id, matterId: document.mid, documentId, actorId: ctx.user_id,
+        kind: 'document_sent',
+        payload: { to, subject, version: version.version, from: result.from },
+      });
+
+      if (document.status === 'approved') {
+        await markIssued(version.id);
+        await setDocumentStatus(ctx.firm_id, documentId, 'issued');
+      }
+
+      return ok(res, { sent: true, to, from: result.from });
     }
 
     // ---------------- Mark issued ----------------

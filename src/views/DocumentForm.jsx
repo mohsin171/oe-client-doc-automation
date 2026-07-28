@@ -15,7 +15,7 @@ export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me,
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
-  onApprove, onBack, onSaveSignature,
+  onApprove, onBack,
 }) {
   const [tab, setTab] = useState('agreement');
   // One deliberate confirmation before sign-off, rather than a tick against
@@ -23,10 +23,6 @@ export default function DocumentForm({
   // agreeing to their own firm's terms, which is not what is happening: they
   // are confirming they have read what they are about to put their name to.
   const [confirmed, setConfirmed] = useState(false);
-  const [sig, setSig] = useState(doc.client_signature || '');
-  const [signedOn, setSignedOn] = useState(
-    doc.client_signed_on ? String(doc.client_signed_on).slice(0, 10) : ''
-  );
 
   const branding = firm?.branding || {};
   const parts = layoutLetter(version?.blocks || []);
@@ -215,33 +211,6 @@ export default function DocumentForm({
               </label>
           </section>
 
-          <section className="df-section df-signature">
-            <div className="sig-grid">
-              <div>
-                <label className="sig-label" htmlFor="sig-name">Signature <em>*</em></label>
-                <div className="sig-pad">
-                  <input
-                    id="sig-name"
-                    className="sig-typed"
-                    value={sig}
-                    onChange={(e) => setSig(e.target.value)}
-                    onBlur={() => onSaveSignature(sig, signedOn)}
-                    placeholder="Type your full name"
-                  />
-                  <span className="sig-rule" />
-                </div>
-              </div>
-              <div>
-                <label className="sig-label" htmlFor="sig-date">Date signed</label>
-                <input
-                  id="sig-date"
-                  type="date"
-                  value={signedOn}
-                  onChange={(e) => { setSignedOn(e.target.value); onSaveSignature(sig, e.target.value); }}
-                />
-              </div>
-            </div>
-          </section>
         </div>
       )}
 

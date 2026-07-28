@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import DocumentForm from './DocumentForm.jsx';
 import DocumentFinal from './DocumentFinal.jsx';
+import SendDrawer from './SendDrawer.jsx';
 
 // The document screen is a thin shell now: it loads, holds the editing state,
 // and performs the actions. How the letter looks belongs in DocumentForm.
@@ -53,14 +54,23 @@ export default function Review({ documentId, onBack }) {
           onIssue={() => run('issue', () => api.issue({ documentId }))}
           onReopen={() => run('reopen', () => api.reopen({ documentId }))}
           onBack={onBack}
+          onSaveSignature={(signature, signedOn) => run('signature', () =>
+            api.saveSignature({ documentId, signature, signedOn }))}
         />
         {sending && (
-          <SendToClient
+          <SendDrawer
             doc={doc}
             firm={firm}
-            salutation={salutation}
-            documentId={documentId}
-            onClose={() => setSending(false)}
+            sender={state.sender}
+            sends={state.sends || []}
+            canSend={state.canSend}
+            busy={busy}
+            error={error}
+            onClose={() => { setSending(false); setError(null); }}
+            onSend={(payload) => run('send', async () => {
+              await api.sendDocument({ documentId, ...payload });
+              setSending(false);
+            })}
           />
         )}
       </>
@@ -97,14 +107,6 @@ export default function Review({ documentId, onBack }) {
           await api.flag({ documentId, flagId, dismissed: true, reason });
           setDismissing(null); setReason('');
         })}
-        onSaveSignature={(signature, signedOn) => {
-          // Saved quietly on leaving the field. A signature is not something to
-          // make someone press a button for, and losing it because they navigated
-          // away would be worse than a redundant save.
-          api.saveSignature({ documentId, signature, signedOn })
-            .then(() => load())
-            .catch((e) => setError(e.message));
-        }}
         onApprove={() => run('approve', () => api.approve({ documentId }))}
         onIssue={() => run('issue', () => api.issue({ documentId }))}
         onReopen={() => run('reopen', () => api.reopen({ documentId }))}
@@ -112,84 +114,6 @@ export default function Review({ documentId, onBack }) {
         onBack={onBack}
       />
 
-      {sending && (
-        <SendToClient
-          doc={doc}
-          firm={firm}
-          salutation={salutation}
-          documentId={documentId}
-          onClose={() => setSending(false)}
-        />
-      )}
     </>
-  );
-}
-
-// The letter goes from the fee earner's own address, in a thread the client can
-// reply into, because an engagement letter is often the first substantial thing
-// they receive and it should not arrive from software.
-function SendToClient({ doc, firm, salutation, documentId, onClose }) {
-  const branding = firm?.branding || {};
-  const firmName = branding.letterhead || firm?.name || '';
-  const subject = `${firmName}: your engagement letter (${doc.reference})`;
-  const [note, setNote] = useState(
-    `Dear ${salutation || doc.client_name},\n\n`
-    + 'Please find attached our engagement letter for this matter, setting out the '
-    + 'terms on which we will act for you and the basis on which we will charge.\n\n'
-    + 'Please read it carefully. If anything does not match your understanding of '
-    + 'what we discussed, do let me know before we begin work.\n\nKind regards'
-  );
-  const [step, setStep] = useState(1);
-
-  const mailto = `mailto:${encodeURIComponent(doc.client_email || '')}`
-    + `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(note)}`;
-
-  return (
-    <div className="modal-scrim" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Send to client</h2>
-        <p className="muted">
-          The letter goes from your own address, so the client replies to you
-          rather than to us.
-        </p>
-
-        <div className="kv">
-          <div>
-            <div className="kv-key">To</div>
-            <div className="kv-val">{doc.client_email || 'No email on this client'}</div>
-          </div>
-        </div>
-
-        <label className="field" style={{ marginTop: 16 }}>
-          <span>Covering note</span>
-          <textarea rows={9} value={note} onChange={(e) => setNote(e.target.value)} />
-        </label>
-
-        <ol className="send-steps">
-          <li className={step > 1 ? 'done' : 'now'}>
-            <a className="btn" href={api.downloadUrl(documentId, 'pdf')} onClick={() => setStep(2)}>
-              Download the PDF
-            </a>
-            <span className="prov">Saves to your computer, ready to attach.</span>
-          </li>
-          <li className={step > 1 ? 'now' : ''}>
-            <a className={step > 1 ? 'btn-primary' : 'btn'} href={doc.client_email ? mailto : undefined}>
-              Open the email
-            </a>
-            <span className="prov">A draft from you, with the note above. Attach and send.</span>
-          </li>
-        </ol>
-
-        {!doc.client_email && (
-          <div className="notice warn">
-            This client has no email address on file. Add one on their details page.
-          </div>
-        )}
-
-        <div className="btn-row" style={{ marginTop: 18 }}>
-          <button className="btn-ghost" onClick={onClose}>Close</button>
-        </div>
-      </div>
-    </div>
   );
 }
