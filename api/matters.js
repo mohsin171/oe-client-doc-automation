@@ -127,6 +127,14 @@ export default async function handler(req, res) {
       const templates = await listTemplates(ctx.firm_id);
       const timeline = view === 'full' ? await getMatterTimeline(ctx.firm_id, matter.id) : [];
       const users = (await listUsers(ctx.firm_id)).filter((u) => u.active);
+
+      // The notes the facts were read from. Editing a fee or a scope without being
+      // able to see, or correct, the notes behind it is editing the answer while
+      // leaving the working wrong.
+      const capture = (await sql`
+        SELECT transcript FROM captures
+        WHERE matter_id = ${matter.id} AND transcript IS NOT NULL
+        ORDER BY created_at DESC LIMIT 1`)[0];
       const access = await listMatterAccess(matter.id);
 
       // Describe each gap so it can be filled with the right control rather
@@ -383,6 +391,84 @@ export default async function handler(req, res) {
       });
 
       return ok(res, { changed: Object.keys(changed) });
+    }
+
+    // Everything the client form holds, corrected in one act: the typed facts, the
+    // facts read from the notes, and the notes themselves.
+    if (body.action === 'update') {
+      const matterId = Number(body.matterId);
+      const matter = await getMatter(ctx.firm_id, matterId);
+      if (!matter) return bad(res, 'Client not found', 404);
+      if (!(await canSeeMatter(ctx.firm_id, matterId, actorFor(ctx)))) {
+        return bad(res, 'Client not found', 404);
+      }
+
+      const values = body.values || {};
+      const name = String(values.client_legal_name || '').trim();
+      if (!name) return bad(res, 'A client needs a legal name');
+
+      const beforeRow = (await sql`
+        SELECT legal_name, email, phone, address FROM clients
+        WHERE id = ${matter.client_id} AND firm_id = ${ctx.firm_id} LIMIT 1`)[0];
+
+      await sql`
+        UPDATE clients SET
+          legal_name = ${name},
+          email   = COALESCE(NULLIF(${values.client_email || ''}, ''), email),
+          phone   = COALESCE(NULLIF(${values.client_phone || ''}, ''), phone),
+          address = COALESCE(NULLIF(${values.client_address || ''}, ''), address)
+        WHERE id = ${matter.client_id} AND firm_id = ${ctx.firm_id}`;
+
+      if (String(values.matter_type || '').trim()) {
+        await sql`
+          UPDATE matters SET matter_type = ${String(values.matter_type).trim()}
+          WHERE id = ${matterId} AND firm_id = ${ctx.firm_id}`;
+      }
+
+      // Every value the form carries, not only the client's own details. A blank is
+      // still not a value: it leaves what is there rather than erasing it, because a
+      // field the form did not ask about this time must not be wiped by its absence.
+      for (const [rawKey, raw] of Object.entries(values)) {
+        const key = canonicalKey(rawKey);
+        if (isSystemField(key)) continue;
+        const v = String(raw ?? '').trim();
+        if (!v) continue;
+        await upsertMatterField(matterId, {
+          key,
+          value: v,
+          source: 'manual_fix',
+          provenance: body.provenance?.[key] || 'Corrected by hand',
+          confidence: 1,
+          isNumeric: looksNumeric(key, v),
+        });
+        await confirmMatterField(matterId, key, ctx.user_id);
+      }
+
+      // The notes are kept as a new capture rather than overwritten, so what the
+      // facts were originally read from is still on the record.
+      const narrative = String(body.narrative || '').trim();
+      if (narrative) {
+        await sql`
+          INSERT INTO captures (matter_id, user_id, kind, transcript, extracted)
+          VALUES (${matterId}, ${ctx.user_id}, 'form', ${narrative}, '{}'::jsonb)`;
+      }
+
+      const changed = {};
+      for (const [col, key] of [['legal_name', 'client_legal_name'], ['email', 'client_email'],
+        ['phone', 'client_phone'], ['address', 'client_address']]) {
+        const now = String(values[key] || '').trim();
+        if (now && now !== String(beforeRow?.[col] || '')) {
+          changed[col] = { from: beforeRow?.[col] || null, to: now };
+        }
+      }
+
+      await logEvent({
+        firmId: ctx.firm_id, matterId, actorId: ctx.user_id,
+        kind: 'matter_corrected',
+        payload: { changed, notesReplaced: Boolean(narrative) },
+      });
+
+      return ok(res, { matterId, changed: Object.keys(changed) });
     }
 
     if (body.action === 'reassign' || body.action === 'grant' || body.action === 'revoke') {

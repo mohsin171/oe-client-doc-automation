@@ -17,7 +17,11 @@ const STEPS = [
   { key: 'check', title: 'Check' },
 ];
 
-export default function NewMatter({ onClose, onCreated }) {
+export default function NewMatter({ matterId, onClose, onCreated }) {
+  // One form for both: opening a client and correcting one. Editing a fee or a
+  // scope without being able to see the notes it was read from is editing the
+  // answer while leaving the working wrong, so the whole form reopens.
+  const isEdit = Boolean(matterId);
   const [step, setStep] = useState(0);
   const [typed, setTypedFields] = useState(null);
   const [extractable, setExtractable] = useState([]);
@@ -39,22 +43,37 @@ export default function NewMatter({ onClose, onCreated }) {
   const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    api.matterForm()
-      .then((d) => {
+    Promise.all([api.matterForm(), isEdit ? api.getMatter(matterId) : null])
+      .then(([d, existing]) => {
         setTypedFields(d.typed || []);
         setExtractable(d.extracted || []);
         setUsers(d.users || []);
         setMe(d.me || null);
         setClients(d.clients || []);
         setTemplates(d.templates || []);
-        setValues((v) => ({
-          ...v,
-          fee_earner_name: d.me?.name || '',
-          supervisor_name: d.me?.name || '',
-        }));
+        if (existing) {
+          // Opened with what is on record, so a correction is an edit rather than a
+          // re-entry, and nothing already captured is quietly lost by omission.
+          const onFile = {};
+          for (const f of existing.fields || []) onFile[f.key] = f.value;
+          setValues({
+            fee_earner_name: d.me?.name || '',
+            supervisor_name: d.me?.name || '',
+            ...onFile,
+            client_legal_name: onFile.client_legal_name || existing.matter?.client_name || '',
+            matter_type: onFile.matter_type || existing.matter?.matter_type || '',
+          });
+          setNarrative(existing.narrative || '');
+        } else {
+          setValues((v) => ({
+            ...v,
+            fee_earner_name: d.me?.name || '',
+            supervisor_name: d.me?.name || '',
+          }));
+        }
       })
       .catch((e) => setLoadError(e.message));
-  }, []);
+  }, [matterId]);
 
   const set = (k) => (e) => {
     setValues({ ...values, [k]: e.target.value });
@@ -112,6 +131,12 @@ export default function NewMatter({ onClose, onCreated }) {
   async function save() {
     setBusy(true); setError(null);
     try {
+      if (isEdit) {
+        await api.updateMatter({ matterId, values, narrative, provenance });
+        onCreated(matterId);
+        setBusy(false);
+        return;
+      }
       const d = await api.createMatter({
         values, narrative, provenance,
         clientId: clientId || undefined,
@@ -218,7 +243,10 @@ export default function NewMatter({ onClose, onCreated }) {
       </ol>
 
       <div className="wizard-body" key={step}>
-        <h2 className="wizard-head">{STEPS[step].title}</h2>
+        <h2 className="wizard-head">
+          {STEPS[step].title}
+          {isEdit && <span className="wizard-editing">correcting an existing file</span>}
+        </h2>
 
         {step === 0 && (
           <>
@@ -338,7 +366,7 @@ export default function NewMatter({ onClose, onCreated }) {
           {step === 2 && (
             <>
               <button className="btn-primary" disabled={busy} onClick={save}>
-                {busy ? 'Saving…' : 'Save client'}
+                {busy ? 'Saving…' : isEdit ? 'Save changes' : 'Save client'}
               </button>
               <button className="btn-ghost" onClick={() => setStep(1)}>Back to notes</button>
             </>

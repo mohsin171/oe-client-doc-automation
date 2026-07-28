@@ -1557,3 +1557,13 @@ button:disabled { transition: opacity 160ms var(--ease); }
 }
 .edit-profile .field-grid { margin-bottom: 4px; }
 .edit-profile .prov { margin: 10px 0 12px; }
+
+.record-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; margin-bottom: 14px;
+}
+.wizard-editing {
+  display: block; font-family: 'Nunito Sans', sans-serif;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--steel); margin-top: 5px;
+}

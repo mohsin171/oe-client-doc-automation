@@ -46,6 +46,7 @@ export default function App() {
   const [tab, setTab] = useState(opening.tab);
   const [matterId, setMatterId] = useState(opening.matterId);
   const [documentId, setDocumentId] = useState(opening.documentId);
+  const [editingMatter, setEditingMatter] = useState(Boolean(opening.editing));
   const [matters, setMatters] = useState([]);
 
   const loadSession = useCallback(() => {
@@ -77,15 +78,20 @@ export default function App() {
     return () => window.removeEventListener('oe-unauthenticated', drop);
   }, [loadSession]);
 
-  function backToQueue() { setMatterId(null); setDocumentId(null); loadMatters(); }
-  function go(next) { setMatterId(null); setDocumentId(null); setTab(next); loadMatters(); }
+  function backToQueue() {
+    setMatterId(null); setDocumentId(null); setEditingMatter(false); loadMatters();
+  }
+  function go(next) {
+    setMatterId(null); setDocumentId(null); setEditingMatter(false);
+    setTab(next); loadMatters();
+  }
 
   // Keep the address bar in step with where you are, and answer the back button.
   // A replace on first paint, a push thereafter, so the entry you arrived on is
   // not duplicated.
   const firstPaint = useRef(true);
   useEffect(() => {
-    const here = { tab, matterId, documentId };
+    const here = { tab, matterId, documentId, editing: editingMatter };
     const path = toPath(here);
     if (firstPaint.current) {
       firstPaint.current = false;
@@ -95,19 +101,20 @@ export default function App() {
     if (window.location.pathname !== path) {
       window.history.pushState(here, '', path);
     }
-  }, [tab, matterId, documentId]);
+  }, [tab, matterId, documentId, editingMatter]);
 
   useEffect(() => {
     function onPop(e) {
       const there = e.state || fromPath(window.location.pathname);
-      if (samePlace(there, { tab, matterId, documentId })) return;
+      if (samePlace(there, { tab, matterId, documentId, editing: editingMatter })) return;
       setTab(there.tab);
       setMatterId(there.matterId);
       setDocumentId(there.documentId);
+      setEditingMatter(Boolean(there.editing));
     }
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [tab, matterId, documentId]);
+  }, [tab, matterId, documentId, editingMatter]);
   function openMatter(id) { setDocumentId(null); setMatterId(id); }
 
   async function signOut() {
@@ -145,8 +152,26 @@ export default function App() {
     );
   } else if (documentId) {
     view = <Review documentId={documentId} onBack={() => { setDocumentId(null); loadMatters(); }} />;
+  } else if (matterId && editingMatter) {
+    // The whole form, reopened on an existing file. Correcting a fee or a scope
+    // without being able to see the notes it came from would be editing the answer
+    // and leaving the working wrong.
+    view = (
+      <NewMatter
+        matterId={matterId}
+        onClose={() => setEditingMatter(false)}
+        onCreated={() => { setEditingMatter(false); loadMatters(); }}
+      />
+    );
   } else if (matterId) {
-    view = <Matter matterId={matterId} onBack={backToQueue} onOpenDocument={setDocumentId} />;
+    view = (
+      <Matter
+        matterId={matterId}
+        onBack={backToQueue}
+        onOpenDocument={setDocumentId}
+        onEdit={() => setEditingMatter(true)}
+      />
+    );
   } else if (tab === 'documents') {
     view = <Documents onOpenDocument={setDocumentId} />;
   } else if (tab === 'templates') {

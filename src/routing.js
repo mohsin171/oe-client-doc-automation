@@ -22,9 +22,9 @@ const FROM_SEGMENT = Object.fromEntries(
 );
 
 // A place is a tab, optionally a client file, optionally a document within it.
-export function toPath({ tab, matterId, documentId }) {
+export function toPath({ tab, matterId, documentId, editing }) {
   if (documentId) return `/documents/${documentId}`;
-  if (matterId) return `/clients/${matterId}`;
+  if (matterId) return `/clients/${matterId}${editing ? '/edit' : ''}`;
   return `/${SEGMENT[tab] || 'clients'}`;
 }
 
@@ -38,7 +38,12 @@ export function fromPath(pathname) {
     return { tab: 'documents', matterId: null, documentId: Number(second) };
   }
   if (first === 'clients' && second) {
-    return { tab: 'clients', matterId: Number(second), documentId: null };
+    return {
+      tab: 'clients',
+      matterId: Number(second),
+      documentId: null,
+      editing: parts[2] === 'edit',
+    };
   }
 
   const tab = FROM_SEGMENT[first];
@@ -52,5 +57,6 @@ export function fromPath(pathname) {
 export function samePlace(a, b) {
   return a.tab === b.tab
     && Number(a.matterId) === Number(b.matterId)
-    && Number(a.documentId) === Number(b.documentId);
+    && Number(a.documentId) === Number(b.documentId)
+    && Boolean(a.editing) === Boolean(b.editing);
 }
