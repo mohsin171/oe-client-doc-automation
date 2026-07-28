@@ -3,7 +3,7 @@ import { api } from '../api.js';
 
 const LABEL = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-export default function Matter({ matterId, onBack, onOpenDocument, onEdit }) {
+export default function Matter({ matterId, onBack, onOpenDocument, onEdit, onRemoved }) {
   const [state, setState] = useState({ loading: true });
   const [documents, setDocuments] = useState([]);
   const [draft, setDraft] = useState({});
@@ -11,6 +11,7 @@ export default function Matter({ matterId, onBack, onOpenDocument, onEdit }) {
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
+  const [removing, setRemoving] = useState(false);
 
   async function load() {
     try {
@@ -42,6 +43,18 @@ export default function Matter({ matterId, onBack, onOpenDocument, onEdit }) {
     setBusy(null);
   }
 
+
+  async function removeMatter() {
+    setBusy('remove'); setError(null);
+    try {
+      await api.deleteMatter({ matterId });
+      onRemoved();
+    } catch (e) {
+      setError(e.message);
+      setRemoving(false);
+    }
+    setBusy(null);
+  }
 
   async function changeAccess(fn) {
     setBusy('access'); setError(null);
@@ -383,6 +396,31 @@ export default function Matter({ matterId, onBack, onOpenDocument, onEdit }) {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {canManageAccess && (
+        <div className="section danger-zone">
+          {!removing ? (
+            <button className="btn-ghost danger" onClick={() => setRemoving(true)}>
+              Remove this client
+            </button>
+          ) : (
+            <>
+              <div className="box-title">Remove {matter.client_name}?</div>
+              <p className="prov">
+                The file, its record and any draft go. Letters that went to the client
+                cannot be removed, and if there are any this will be refused: closing
+                the file takes it off the list and keeps the history.
+              </p>
+              <div className="btn-row">
+                <button className="btn danger" disabled={busy === 'remove'} onClick={removeMatter}>
+                  {busy === 'remove' ? 'Removing…' : 'Yes, remove it'}
+                </button>
+                <button className="btn-ghost" onClick={() => setRemoving(false)}>Cancel</button>
+              </div>
+            </>
+          )}
         </div>
       )}
 

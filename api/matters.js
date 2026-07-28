@@ -487,6 +487,63 @@ export default async function handler(req, res) {
       return ok(res, { matterId, changed: Object.keys(changed) });
     }
 
+    // Removing a client, and refusing to when that would destroy the record of what
+    // they were sent.
+    //
+    // The firm's own letters promise to keep a file for six years. A letter that has
+    // left the building is the only answer to what a client was told, and deleting it
+    // to tidy a list is not a trade worth offering. Where nothing has been issued
+    // there is nothing to preserve, and a mistyped file should not be permanent.
+    if (body.action === 'delete_matter') {
+      if (ctx.role !== 'owner') {
+        return bad(res, 'Only the firm owner can remove a client', 403);
+      }
+      const matterId = Number(body.matterId);
+      const matter = await getMatter(ctx.firm_id, matterId);
+      if (!matter) return bad(res, 'Client not found', 404);
+
+      const issued = (await sql`
+        SELECT count(*)::int AS n FROM documents
+        WHERE matter_id = ${matterId} AND status = 'issued'`)[0]?.n || 0;
+      const sent = (await sql`
+        SELECT count(*)::int AS n FROM sends WHERE matter_id = ${matterId}`)[0]?.n || 0;
+
+      if (issued > 0 || sent > 0) {
+        return bad(res,
+          `This file has ${issued || sent} letter${(issued || sent) > 1 ? 's' : ''} that went to the `
+          + 'client, and removing it would destroy the record of what they were sent. Close the '
+          + 'file instead: it leaves the list and keeps the history.', 409);
+      }
+
+      // The count is sent back so a confirmation can name what is going, and a stale
+      // page cannot delete more than the person could see.
+      const drafts = (await sql`
+        SELECT count(*)::int AS n FROM documents WHERE matter_id = ${matterId}`)[0]?.n || 0;
+      if (body.confirmDrafts !== undefined && Number(body.confirmDrafts) !== drafts) {
+        return bad(res, `That file now has ${drafts} draft${drafts === 1 ? '' : 's'}. Try again.`, 409);
+      }
+
+      await logEvent({
+        firmId: ctx.firm_id, actorId: ctx.user_id,
+        kind: 'matter_removed',
+        payload: { reference: matter.reference, client: matter.client_name, drafts },
+      });
+
+      // The event is written first, because the delete cascades through events for
+      // this matter and the record of the removal should outlive what it removed.
+      await sql`DELETE FROM matters WHERE id = ${matterId} AND firm_id = ${ctx.firm_id}`;
+
+      // A client with no other files goes too, rather than being left behind as a
+      // name nobody can reach.
+      const remaining = (await sql`
+        SELECT count(*)::int AS n FROM matters WHERE client_id = ${matter.client_id}`)[0]?.n || 0;
+      if (remaining === 0) {
+        await sql`DELETE FROM clients WHERE id = ${matter.client_id} AND firm_id = ${ctx.firm_id}`;
+      }
+
+      return ok(res, { removed: matter.reference, drafts, clientRemoved: remaining === 0 });
+    }
+
     if (body.action === 'reassign' || body.action === 'grant' || body.action === 'revoke') {
       if (ctx.role !== 'owner') {
         return bad(res, 'Only the firm owner can change who sees a file', 403);

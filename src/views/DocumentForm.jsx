@@ -15,8 +15,9 @@ export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me, groundedOn = [],
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
-  onApprove, onBack,
+  onApprove, onBack, onDelete,
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState('agreement');
   // One deliberate confirmation before sign-off, rather than a tick against
   // every clause. The per-clause version read as though the fee earner were
@@ -233,6 +234,18 @@ export default function DocumentForm({
 
       <footer className="df-foot">
         <button className="btn" onClick={onBack}>Back</button>
+
+        {confirmDelete ? (
+          <>
+            <span className="prov">Delete this draft? Nothing has been sent from it.</span>
+            <button className="btn danger btn-sm" disabled={busy === 'delete'} onClick={onDelete}>
+              {busy === 'delete' ? 'Deleting…' : 'Yes, delete'}
+            </button>
+            <button className="btn-ghost" onClick={() => setConfirmDelete(false)}>Cancel</button>
+          </>
+        ) : (
+          <button className="btn-ghost" onClick={() => setConfirmDelete(true)}>Delete draft</button>
+        )}
 
         {me?.canApprove ? (
           <div className="df-foot-right">

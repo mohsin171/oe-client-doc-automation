@@ -44,6 +44,7 @@ export const api = {
   extractNotes: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'extract', ...body }) }),
   getMatter: (id, view) => req(`/api/matters?id=${id}${view ? `&view=${view}` : ''}`),
   createMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'create', ...body }) }),
+  deleteMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'delete_matter', ...body }) }),
   updateMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'update', ...body }) }),
   editClient: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'edit_client', ...body }) }),
   saveFields: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'fields', ...body }) }),
@@ -66,6 +67,7 @@ export const api = {
   sendDocument: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'send', ...body }) }),
   flag: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'flag', ...body }) }),
   approve: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'approve', ...body }) }),
+  deleteDocument: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'delete_document', ...body }) }),
   reopen: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'reopen', ...body }) }),
   issue: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'issue', ...body }) }),
 

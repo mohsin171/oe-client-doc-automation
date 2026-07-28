@@ -112,6 +112,10 @@ export default function Review({ documentId, onBack }) {
           setDismissing(null); setReason('');
         })}
         onApprove={() => run('approve', () => api.approve({ documentId }))}
+        onDelete={() => run('delete', async () => {
+          await api.deleteDocument({ documentId });
+          onBack();
+        })}
         onIssue={() => run('issue', () => api.issue({ documentId }))}
         onReopen={() => run('reopen', () => api.reopen({ documentId }))}
         onSend={() => setSending(true)}

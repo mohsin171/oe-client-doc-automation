@@ -687,6 +687,46 @@ export default async function handler(req, res) {
       return ok(res, { sent: true, to, from: result.from });
     }
 
+    // ---------------- Delete a draft ----------------
+    //
+    // An issued letter is the copy the client holds, and it is not deletable at any
+    // level of seniority: the record of what was sent is the point. A draft that was
+    // never sent is a working document and can go.
+    if (action === 'delete_document') {
+      const documentId = Number(body.documentId);
+      const rows = await sql`
+        SELECT d.status, d.matter_id, m.reference FROM documents d
+        JOIN matters m ON m.id = d.matter_id
+        WHERE d.firm_id = ${ctx.firm_id} AND d.id = ${documentId} LIMIT 1`;
+      const doc = rows[0];
+      if (!doc) return bad(res, 'Document not found', 404);
+      if (!(await canSeeMatter(ctx.firm_id, doc.matter_id, actorFor(ctx)))) {
+        return bad(res, 'Document not found', 404);
+      }
+
+      if (doc.status === 'issued') {
+        return bad(res, 'This letter has gone to the client, so it stays on the record. '
+          + 'Revise it as a new version instead.', 409);
+      }
+
+      const sent = (await sql`
+        SELECT count(*)::int AS n FROM sends s
+        JOIN document_versions v ON v.id = s.document_version_id
+        WHERE v.document_id = ${documentId}`)[0]?.n || 0;
+      if (sent > 0) {
+        return bad(res, 'A version of this letter was sent to the client, so it stays on '
+          + 'the record.', 409);
+      }
+
+      await logEvent({
+        firmId: ctx.firm_id, matterId: doc.matter_id, actorId: ctx.user_id,
+        kind: 'draft_deleted', payload: { reference: doc.reference, status: doc.status },
+      });
+
+      await sql`DELETE FROM documents WHERE id = ${documentId} AND firm_id = ${ctx.firm_id}`;
+      return ok(res, { deleted: documentId });
+    }
+
     // ---------------- Mark issued ----------------
     if (action === 'issue') {
       const documentId = Number(body.documentId);

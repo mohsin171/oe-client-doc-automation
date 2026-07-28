@@ -1578,3 +1578,11 @@ button:disabled { transition: opacity 160ms var(--ease); }
 .conflict-said.ok { color: var(--green); background: var(--green-bg); }
 .conflict-said.warn { color: var(--amber); background: var(--amber-bg); }
 .conflict-said.bad { color: var(--red); background: var(--red-bg); }
+
+/* Removal, at the foot and away from everything else, because it is the one thing
+   on the page that cannot be undone. */
+.danger-zone { border-color: #EDD6D4; }
+.btn-ghost.danger { color: var(--red); }
+.btn-ghost.danger:hover { background: var(--red-bg); }
+.danger-zone .box-title { color: var(--red); margin-bottom: 8px; }
+.danger-zone .prov { margin-bottom: 14px; max-width: 620px; }

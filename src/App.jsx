@@ -170,6 +170,7 @@ export default function App() {
         onBack={backToQueue}
         onOpenDocument={setDocumentId}
         onEdit={() => setEditingMatter(true)}
+        onRemoved={() => { setMatterId(null); loadMatters(); }}
       />
     );
   } else if (tab === 'documents') {
