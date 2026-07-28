@@ -86,7 +86,7 @@ export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me,
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
-  onApprove, onIssue, onReopen, onSend, onBack,
+  onApprove, onIssue, onReopen, onSend, onBack, onSuggest, suggestion, clearSuggestion,
 }) {
   const [tab, setTab] = useState('agreement');
   const [acks, setAcks] = useState({});
@@ -214,6 +214,15 @@ export default function DocumentForm({
                           Fix this section
                         </button>
                       )}
+                      {f.anchor && (
+                        <button
+                          className="btn btn-sm"
+                          disabled={busy === `suggest-${f.id}`}
+                          onClick={() => onSuggest(f.id)}
+                        >
+                          {busy === `suggest-${f.id}` ? 'Thinking…' : 'Suggest a fix'}
+                        </button>
+                      )}
                       {!f.verifiable && (
                         <button className="btn btn-sm" onClick={() => onResolve(f.id)}>Resolved</button>
                       )}
@@ -224,6 +233,56 @@ export default function DocumentForm({
                     <p className="prov check-note">
                       This clears itself once the letter is corrected.
                     </p>
+                  )}
+
+                  {/* A proposal, not a change. Nothing is written until it is
+                      accepted, and the current wording stays visible beside it
+                      so the difference is a decision rather than a surprise. */}
+                  {suggestion?.flagId === f.id && (
+                    <div className="suggestion">
+                      {suggestion.canFix ? (
+                        <>
+                          <div className="sug-head">
+                            <span className="box-title">Suggested wording</span>
+                            {suggestion.note && <span className="prov">{suggestion.note}</span>}
+                          </div>
+                          <blockquote className="sug-text">{suggestion.suggestion}</blockquote>
+                          <details className="sug-current">
+                            <summary>Show the wording it replaces</summary>
+                            <blockquote className="sug-text was">{suggestion.current}</blockquote>
+                          </details>
+                          <div className="btn-row">
+                            <button
+                              className="btn-primary btn-sm"
+                              disabled={busy === 'edit'}
+                              onClick={() => {
+                                setEditing(suggestion.anchor);
+                                setEditText(suggestion.suggestion);
+                                onEditSave(suggestion.anchor, suggestion.suggestion);
+                              }}
+                            >
+                              Use this wording
+                            </button>
+                            <button
+                              className="btn btn-sm"
+                              onClick={() => {
+                                setEditing(suggestion.anchor);
+                                setEditText(suggestion.suggestion);
+                                clearSuggestion();
+                              }}
+                            >
+                              Edit it first
+                            </button>
+                            <button className="btn-ghost" onClick={clearSuggestion}>Discard</button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="box-title">Cannot be fixed by rewording</div>
+                          <p className="prov">{suggestion.note}</p>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}

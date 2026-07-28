@@ -14,6 +14,7 @@ export default function Review({ documentId, onBack }) {
   const [dismissing, setDismissing] = useState(null);
   const [reason, setReason] = useState('');
   const [sending, setSending] = useState(false);
+  const [suggestion, setSuggestion] = useState(null);
 
   async function load() {
     try { setState({ loading: false, ...(await api.getDocument(documentId)) }); }
@@ -53,9 +54,16 @@ export default function Review({ documentId, onBack }) {
         setDismissing={setDismissing}
         reason={reason}
         setReason={setReason}
-        onEditSave={(key) => run('edit', async () => {
-          await api.editBlock({ documentId, blockKey: key, body: editText });
+        onSuggest={(flagId) => run(`suggest-${flagId}`, async () => {
+          const d = await api.suggest({ documentId, flagId });
+          setSuggestion({ flagId, ...d });
+        })}
+        suggestion={suggestion}
+        clearSuggestion={() => setSuggestion(null)}
+        onEditSave={(key, override) => run('edit', async () => {
+          await api.editBlock({ documentId, blockKey: key, body: override ?? editText });
           setEditing(null);
+          setSuggestion(null);
         })}
         onResolve={(flagId) => run(flagId, () => api.flag({ documentId, flagId, dismissed: false }))}
         onDismiss={(flagId) => run(flagId, async () => {
