@@ -161,6 +161,12 @@ export default async function handler(req, res) {
 
       return ok(res, {
         matter, fields, required, completeness, templates, timeline, users, gaps, suggestions,
+        // The notes the facts were read from, so correcting a fee does not mean
+        // editing the answer while leaving the working wrong.
+        narrative: capture?.transcript || '',
+        // Who can see this file, and whether the person looking may change it.
+        access,
+        canManageAccess: ctx.role === 'owner',
       });
     }
 
