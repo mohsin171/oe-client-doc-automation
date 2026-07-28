@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
-const ROLE_NOTE = {
-  admin: 'Full access to matters, documents and sign-off.',
-  owner: 'Everything an admin can do, plus managing who has access.',
-};
-
 export default function Team() {
   const [state, setState] = useState({ loading: true, team: [] });
   const [invite, setInvite] = useState({ name: '', email: '', role: 'admin' });
@@ -59,14 +54,11 @@ export default function Team() {
                 <span>Work email</span>
                 <input value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} />
               </label>
-              <label className="field">
-                <span>Role</span>
-                <select value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
-                  <option value="admin">Admin</option>
-                </select>
-              </label>
             </div>
-            <p className="prov">{ROLE_NOTE[invite.role]}</p>
+            <p className="prov">
+              Everyone invited can open their own clients, draft and sign off. Only
+              you can add or remove people.
+            </p>
             <button
               className="btn-primary"
               style={{ marginTop: 14 }}

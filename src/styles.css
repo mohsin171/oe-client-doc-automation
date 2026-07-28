@@ -282,7 +282,7 @@ textarea.tall { min-height: 230px; }
 .modal h2 { font-size: 1.3rem; color: var(--nearblack); margin-bottom: 8px; }
 .modal .muted { margin-bottom: 20px; }
 
-.invite-grid { display: grid; grid-template-columns: 1fr 1fr 150px; gap: 12px; }
+.invite-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .invite-grid .field { margin-bottom: 0; }
 
 .back { background: none; border: none; color: var(--bright); font-weight: 700; font-size: 0.84rem; padding: 0; margin-bottom: 16px; }
