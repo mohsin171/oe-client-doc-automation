@@ -239,6 +239,8 @@ export default function Templates() {
                 {result.corpus?.n > 1
                   ? `In all ${result.corpus.n} documents. The AI can never alter these`
                   : 'The AI can never alter these'}
+                {result.summary.structure > 0
+                  && `, along with ${result.summary.structure} heading${result.summary.structure > 1 ? 's' : ''} and markings`}
               </div>
             </div>
             <div className="stat">
@@ -413,6 +415,7 @@ export default function Templates() {
                     <span className="row-sub">
                       {t.summary.fixed} standard · {t.summary.field} merged ·{' '}
                       {t.summary.bespoke} written each time · {t.summary.requiredFields} values
+                      {t.summary.structure > 0 && ` · ${t.summary.structure} headings`}
                     </span>
                   </div>
                   <div className="row-side">

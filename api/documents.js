@@ -134,9 +134,28 @@ function subjectFrom(scope, matterType) {
 // Everything the system already knows. Asking a person for the reference it
 // generated itself, or for today's date, is busywork that blocks a letter on
 // information nobody needs to supply.
+// An address entered as a block, cut into the lines a letter prints. A postcode is
+// recognised by its shape rather than by position, since plenty of addresses put it
+// on the same line as the town.
+function addressLines(address) {
+  const lines = String(address || '')
+    .split(/\n|,/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const postcode = (String(address || '')
+    .match(/\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i) || [''])[0].toUpperCase();
+  return {
+    client_address_line_1: lines[0] || '',
+    client_address_line_2: lines[1] || '',
+    client_address_line_3: lines.slice(2).join(', '),
+    client_postcode: postcode,
+  };
+}
+
 function systemValues({ matter, ctx, values }) {
   const branding = ctx.branding || {};
   return {
+    ...addressLines(values.client_address || matter.client_address),
     letter_date: new Date().toLocaleDateString('en-GB', {
       day: 'numeric', month: 'long', year: 'numeric',
     }),
