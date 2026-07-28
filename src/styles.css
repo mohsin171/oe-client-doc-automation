@@ -1567,3 +1567,14 @@ button:disabled { transition: opacity 160ms var(--ease); }
   font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.07em; color: var(--steel); margin-top: 5px;
 }
+
+/* What the conflict check said, beside the button that asked. It used to render
+   200px above, in the middle of the form, so pressing the button appeared to do
+   nothing at all. */
+.conflict-said {
+  font-size: 0.82rem; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+  animation: noticeIn 220ms var(--ease) both;
+}
+.conflict-said.ok { color: var(--green); background: var(--green-bg); }
+.conflict-said.warn { color: var(--amber); background: var(--amber-bg); }
+.conflict-said.bad { color: var(--red); background: var(--red-bg); }

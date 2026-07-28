@@ -38,6 +38,7 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
 
   const [reading, setReading] = useState(false);
   const [conflict, setConflict] = useState(null);
+  const [checking, setChecking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [loadError, setLoadError] = useState(null);
@@ -101,13 +102,27 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
   // who can only see their own clients cannot answer that, so this answers it
   // for them: how many matches, and nothing else. No file, no colleague, no
   // detail that would breach the confidence of another client.
+  // Does the firm already act for someone of this name? A firm has to know before
+  // taking a matter on, and an employee who can only see their own clients cannot
+  // answer it, so this answers it for them: a count, and nothing else. No file, no
+  // colleague, no detail that would breach another client's confidence.
   async function checkConflict() {
     const name = String(values.client_legal_name || '').trim();
-    if (name.length < 3) { setConflict(null); return; }
+    if (name.length < 3) {
+      setConflict({ error: 'Enter the client\'s name first.' });
+      return;
+    }
+    setChecking(true);
+    setConflict(null);
     try {
       const d = await api.conflictCheck(name);
-      setConflict(d.matches);
-    } catch (_) { setConflict(null); }
+      setConflict({ matches: d.matches, name });
+    } catch (e) {
+      // A check that fails silently is worse than no check: it reads as a clean
+      // result. Say so instead.
+      setConflict({ error: e.message });
+    }
+    setChecking(false);
   }
 
   async function readNotes() {
@@ -262,14 +277,6 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
 
             <div className="field-grid">{identity.map((f) => field(f))}</div>
 
-            {conflict !== null && (
-              <div className={conflict > 0 ? 'notice warn' : 'notice info'}>
-                {conflict > 0
-                  ? `The firm already acts for ${conflict} client${conflict > 1 ? 's' : ''} by this name. Check for a conflict before going further.`
-                  : 'No existing client by that name.'}
-              </div>
-            )}
-
             {work.length > 0 && (
               <>
                 <div className="wizard-sub">The work</div>
@@ -341,9 +348,27 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
               >
                 Continue
               </button>
-              <button className="btn" onClick={checkConflict} disabled={!String(values.client_legal_name || '').trim()}>
-                Check for conflict
+              <button
+                className="btn"
+                onClick={checkConflict}
+                disabled={checking || !String(values.client_legal_name || '').trim()}
+              >
+                {checking ? 'Checking…' : 'Check for conflict'}
               </button>
+
+              {conflict && (
+                <span
+                  className={
+                    conflict.error ? 'conflict-said bad'
+                      : conflict.matches > 0 ? 'conflict-said warn' : 'conflict-said ok'
+                  }
+                >
+                  {conflict.error
+                    || (conflict.matches > 0
+                      ? `Already acting for ${conflict.matches} client${conflict.matches > 1 ? 's' : ''} of that name`
+                      : 'No existing client of that name')}
+                </span>
+              )}
               <button className="btn-ghost" onClick={onClose}>Cancel</button>
               {!canLeaveWho && <span className="prov">Name and type of work needed</span>}
             </>
