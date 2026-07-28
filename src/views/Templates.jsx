@@ -140,7 +140,7 @@ export default function Templates() {
       <div className="section">
         <div className="section-head">
           <div>
-            <div className="section-title">Templates</div>
+            <div className="section-title">Your letters</div>
             <div className="section-hint">
               Letters you have already sent. Wording appearing in all of them is
               your standard terms; the rest is written fresh each time.
@@ -306,7 +306,7 @@ export default function Templates() {
         <div className="section">
           <div className="section-head">
             <div>
-              <div className="section-title">Letters on file</div>
+              <div className="section-title">On file</div>
               <div className="section-hint">What drafting is grounded on</div>
             </div>
             <div className="row-side">

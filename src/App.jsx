@@ -15,10 +15,15 @@ import NewMatter from './views/NewMatter.jsx';
 // Two different things that were sharing one name: the letters the firm has
 // written before, which is what drafting learns from, and the letters this
 // system has produced.
+//
+// The first is Your letters. Template was the wrong word for it: a template means
+// a document with blanks to fill in, which is the old way of working and the thing
+// this is sold against. What sits on that page is a firm's own correspondence, and
+// what was counted out of it.
 const NAV = [
   { key: 'clients', label: 'Clients' },
   { key: 'documents', label: 'Documents' },
-  { key: 'templates', label: 'Templates' },
+  { key: 'templates', label: 'Your letters' },
   // Everyone can see who is at the firm. Only the owner can change it, which
   // is enforced inside the page and again on the server.
   { key: 'team', label: 'Team' },
@@ -28,7 +33,7 @@ const TITLES = {
   clients: 'Clients',
   new: 'New client',
   documents: 'Documents',
-  templates: 'Templates',
+  templates: 'Your letters',
   team: 'Team',
 };
 
