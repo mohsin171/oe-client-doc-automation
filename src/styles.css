@@ -1111,3 +1111,6 @@ textarea.tall { min-height: 230px; }
   border-left: 2px solid var(--amber);
   padding-left: 18px; margin-left: -20px;
 }
+
+.letter-confidential { font-weight: 700; margin-bottom: 22px; font-size: 0.95rem; }
+.letter-subject { font-weight: 700; margin: 0 0 6px; font-size: 1rem; }

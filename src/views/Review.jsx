@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import FirmMark from './FirmMark.jsx';
+import { layoutLetter, isFurniture, headingFor } from '../../lib/letter.js';
 
 // One view: the letter as the client will read it, with the review beside it.
 //
@@ -15,12 +16,6 @@ import FirmMark from './FirmMark.jsx';
 // sections only.
 
 const LABEL = (k) => String(k || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-
-function isFurniture(block) {
-  const body = String(block.body || '').trim();
-  if (!body || body.length < 120) return true;
-  return /^(dear|yours|our reference|private and confidential|re:)/i.test(body);
-}
 
 export default function Review({ documentId, onBack }) {
   const [state, setState] = useState({ loading: true });
@@ -47,6 +42,13 @@ export default function Review({ documentId, onBack }) {
 
   const branding = firm?.branding || {};
   const blocks = (version?.blocks || []).filter((b) => String(b.body || '').trim());
+  // One layout, shared with the PDF, so the letter approved and the letter sent
+  // are ordered the same way.
+  const parts = layoutLetter(version?.blocks || []);
+  const ordered = [
+    parts.confidential, parts.salutation, parts.subject,
+    ...parts.body, parts.signoff,
+  ].filter(Boolean);
   const open = flags.filter((f) => f.status === 'open');
   const blocking = open.filter((f) => f.severity === 'blocking');
   const locked = ['approved', 'issued'].includes(doc.status);
@@ -149,15 +151,22 @@ export default function Review({ documentId, onBack }) {
             </div>
           </header>
 
+          {parts.confidential && (
+            <p className="letter-confidential">{String(parts.confidential.body).trim()}</p>
+          )}
+
           <div className="letter-recipient">
             <div>{doc.client_name}</div>
             {doc.client_address && <div className="pre">{doc.client_address}</div>}
           </div>
 
-          <p className="letter-salutation">Dear {salutation || doc.client_name},</p>
+          {!parts.salutation && (
+            <p className="letter-salutation">Dear {salutation || doc.client_name},</p>
+          )}
 
-          {blocks.map((b) => {
+          {ordered.filter((b) => b !== parts.confidential).map((b) => {
             const furniture = isFurniture(b);
+            const isSubject = b === parts.subject;
             const drafted = b.kind === 'bespoke';
             const hasFlag = flagged.has(b.key);
 
@@ -169,7 +178,7 @@ export default function Review({ documentId, onBack }) {
               >
                 {(!furniture || !locked) && (
                   <div className="section-tools">
-                    <h3>{furniture ? '' : LABEL(b.key)}</h3>
+                    <h3>{furniture ? '' : headingFor(b)}</h3>
                     <div className="tool-side">
                       {drafted && <span className="mark-ai">written for this matter</span>}
                       {b.amended && <span className="mark-amended">standard clause changed</span>}
@@ -203,7 +212,7 @@ export default function Review({ documentId, onBack }) {
                     </div>
                   </>
                 ) : (
-                  <p className="letter-body">{b.body}</p>
+                  <p className={isSubject ? 'letter-subject' : 'letter-body'}>{b.body}</p>
                 )}
 
                 {locked && !furniture && (
@@ -252,7 +261,8 @@ export default function Review({ documentId, onBack }) {
               </div>
             </div>
             <div className="btn-row">
-              <a className="btn-primary" href={api.downloadUrl(documentId)}>Download</a>
+              <a className="btn-primary" href={api.downloadUrl(documentId, 'pdf')}>Download PDF</a>
+              <a className="btn" href={api.downloadUrl(documentId, 'docx')}>Word</a>
               <button className="btn" onClick={() => setSending(true)}>Send to client</button>
               {doc.status === 'approved' && (
                 <button

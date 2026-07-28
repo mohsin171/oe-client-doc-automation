@@ -9,6 +9,22 @@ import {
 import { sql } from '../lib/db.js';
 import { getCurrentVersion, logEvent, canSeeMatter } from '../lib/store.js';
 import { requireContext, actorFor, bad } from '../lib/context.js';
+import { renderLetterPdf } from '../lib/pdf.js';
+
+// UK convention: title plus surname, or Sirs for a company.
+function salutationFor(name) {
+  const n = String(name || '').trim();
+  if (!n) return '';
+  if (/\b(limited|ltd|llp|plc)\b/i.test(n)) return 'Sirs';
+  const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+  const parts = n.split(/\s+/).filter(Boolean);
+  const titles = ['mr', 'mrs', 'ms', 'miss', 'dr', 'professor', 'prof'];
+  if (/^mr and mrs/i.test(n)) return `Mr and Mrs ${cap(parts[parts.length - 1])}`;
+  if (parts.length > 1 && titles.includes(parts[0].toLowerCase().replace('.', ''))) {
+    return `${cap(parts[0].replace('.', ''))} ${cap(parts[parts.length - 1])}`;
+  }
+  return parts.map(cap).join(' ');
+}
 
 export default async function handler(req, res) {
   const ctx = await requireContext(req, res);
@@ -18,8 +34,10 @@ export default async function handler(req, res) {
     const documentId = Number((req.query || {}).documentId);
     if (!documentId) return bad(res, 'Supply documentId');
 
+    const format = String((req.query || {}).format || 'pdf').toLowerCase();
+
     const rows = await sql`
-      SELECT d.*, m.reference, c.legal_name AS client_name
+      SELECT d.*, m.reference, c.legal_name AS client_name, c.address AS client_address
       FROM documents d
       JOIN matters m ON m.id = d.matter_id
       JOIN clients c ON c.id = m.client_id
@@ -40,6 +58,31 @@ export default async function handler(req, res) {
     if (!version) return bad(res, 'No version found', 404);
 
     const branding = ctx.branding || {};
+    const dateText = new Date().toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+    const filenameBase = `${document.doc_type}-${document.reference.replace(/\//g, '-')}-v${version.version}`;
+
+    if (format === 'pdf') {
+      const pdf = await renderLetterPdf({
+        document,
+        version,
+        firm: { name: ctx.firm_name, branding },
+        salutation: salutationFor(document.client_name),
+        dateText,
+      });
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
+        kind: 'document_downloaded', payload: { version: version.version, format: 'pdf' },
+      });
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.pdf"`);
+      res.status(200).send(pdf);
+      return;
+    }
+
     const headingFont = branding.headingFont || 'Georgia';
     const bodyFont = branding.bodyFont || 'Arial';
 

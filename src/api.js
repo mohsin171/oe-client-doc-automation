@@ -63,5 +63,5 @@ export const api = {
   reopen: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'reopen', ...body }) }),
   issue: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'issue', ...body }) }),
 
-  downloadUrl: (documentId) => `/api/output?documentId=${documentId}`,
+  downloadUrl: (documentId, format = 'pdf') => `/api/output?documentId=${documentId}&format=${format}`,
 };
