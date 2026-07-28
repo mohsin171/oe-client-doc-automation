@@ -16,6 +16,7 @@ import { generate, runDeterministicRules, isVerifiable } from '../lib/engine.js'
 import { canonicalKey, isSystemField, SYSTEM_FIELDS, fieldMeta } from '../lib/fields.js';
 import { fixTargetFor } from '../lib/letter.js';
 import { queryForMatter, describeGrounding } from '../lib/relevance.js';
+import { prepareForDrafting } from '../lib/redact.js';
 import { renderLetterPdf } from '../lib/pdf.js';
 import { sendDocumentEmail, emailConfigured } from '../lib/email.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
@@ -315,10 +316,20 @@ export default async function handler(req, res) {
       // Shown the firm's closest letters, not its most recent. The query is what
       // this matter is about, which is the only thing that distinguishes it from
       // the last one.
-      const precedents = await getPrecedents(ctx.firm_id, template.doc_type, {
+      const found = await getPrecedents(ctx.firm_id, template.doc_type, {
         query: queryForMatter(values, matter),
         limit: 5,
       });
+
+      // These belong to other clients. Their figures, dates, references, addresses
+      // and names are removed before the model sees them, because an instruction not
+      // to copy what is in front of you is a hope and this is a guarantee. On the
+      // first real test the model took three fee figures straight out of the
+      // examples; a figure it was never shown cannot be copied.
+      const clientNames = (await sql`
+        SELECT legal_name FROM clients WHERE firm_id = ${ctx.firm_id} LIMIT 500`)
+        .map((c) => c.legal_name);
+      const precedents = prepareForDrafting(found, clientNames);
 
       // Gate two lives inside generate(). It will not call the model while any
       // placeholder is unresolved.
