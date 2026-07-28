@@ -1231,9 +1231,8 @@ textarea.tall { min-height: 230px; }
    nobody: it is plainly not handwriting. An italic of the letter's own serif
    looks like a considered mark and belongs to the document's typography. */
 .sig-typed {
-  width: 100%; border: none; background: transparent; padding: 0 0 10px;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-style: italic; font-size: 1.7rem; letter-spacing: 0.01em;
+  width: 100%; border: none; background: transparent; padding: 0 0 6px;
+  font-family: 'Allura', Georgia, serif; font-size: 2.2rem; line-height: 1.15;
   color: var(--nearblack); position: relative; z-index: 1;
 }
 .sig-typed::placeholder { font-style: normal; font-size: 0.9rem; color: var(--faint); }
@@ -1304,12 +1303,17 @@ textarea.tall { min-height: 230px; }
 }
 .final-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-/* A recorded signature, in the letter's own italic serif. */
+/* A signature face, not an italic serif. In the input field an italic was the
+   honest choice, but on a finished letter the mark should read as a signature,
+   which is what it is standing in for.
+   Bundled with the code rather than fetched from a third party at page load: a
+   letterhead that depends on someone else's CDN is a letterhead that sometimes
+   is not there. */
 .sig-written {
-  font-family: Georgia, 'Times New Roman', serif; font-style: italic;
-  font-size: 1.6rem; color: var(--nearblack); padding-bottom: 8px;
+  font-family: 'Allura', Georgia, serif;
+  font-size: 2.3rem; line-height: 1; color: var(--nearblack); padding-bottom: 6px;
 }
-.sig-written.date { font-size: 1rem; font-style: normal; }
+.sig-written.date { font-family: 'Nunito Sans', sans-serif; font-size: 1rem; }
 .df-signature input[type=date] {
   background: var(--canvas); border: 1px solid transparent;
   border-radius: 10px; padding: 13px 15px; font-size: 0.92rem;
@@ -1386,8 +1390,9 @@ textarea.tall { min-height: 230px; }
   font-size: 0.92rem; color: var(--nearblack); margin-bottom: 14px;
 }
 .sheet-hand {
-  font-family: Georgia, 'Times New Roman', serif; font-style: italic;
-  font-size: 1.65rem; color: var(--nearblack); min-height: 40px; line-height: 1.2;
+  font-family: 'Allura', Georgia, serif;
+  font-size: 2.6rem; line-height: 1.1; color: var(--nearblack);
+  min-height: 48px; padding-bottom: 2px;
 }
 .sheet-rule { width: 230px; height: 1px; background: #C6CFD9; margin: 4px 0 8px; }
 .sheet-signame {
