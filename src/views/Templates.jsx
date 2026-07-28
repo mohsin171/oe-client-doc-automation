@@ -28,6 +28,7 @@ export default function Templates() {
   const [reading, setReading] = useState(null);
   const [confirming, setConfirming] = useState(null);
   const [clearing, setClearing] = useState(false);
+  const [picked, setPicked] = useState('');
   const [docs, setDocs] = useState([]);
   const [hint, setHint] = useState('');
   const [result, setResult] = useState(null);
@@ -132,6 +133,7 @@ export default function Templates() {
   }
 
   const totalOnFile = corpus.reduce((n, c) => n + c.n, 0);
+  const selected = onFile.find((d) => String(d.id) === String(picked)) || null;
 
   return (
     <>
@@ -330,30 +332,45 @@ export default function Templates() {
             </div>
           )}
 
-          <div className="rows">
-            {onFile.map((d) => (
-              <div className="row" key={d.id}>
-                <div className="row-main">
-                  <strong>{String(d.section_key || '').replace(/^corpus:/, '')}</strong>
-                  <span className="row-sub">
-                    {d.doc_type.replace(/_/g, ' ')} · {Math.round(d.chars / 1000)}k characters
-                    {' · '}{new Date(d.created_at).toLocaleDateString('en-GB')}
-                  </span>
-                </div>
-                <div className="row-side">
-                  <button className="btn btn-sm" onClick={() => openDoc(d.id)}>Read</button>
-                  {confirming === `doc-${d.id}` ? (
-                    <>
-                      <button className="btn btn-sm" onClick={() => removeDoc(d.id)}>Confirm</button>
-                      <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
-                    </>
-                  ) : (
-                    <button className="btn-ghost" onClick={() => setConfirming(`doc-${d.id}`)}>Remove</button>
-                  )}
-                </div>
+          {/* Twenty letters as twenty rows is a wall. One at a time is how they
+              are actually read: pick the one you want. */}
+          <div className="picker">
+            <select
+              value={picked}
+              onChange={(e) => { setPicked(e.target.value); setConfirming(null); }}
+            >
+              <option value="">Choose a letter…</option>
+              {onFile.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {String(d.section_key || '').replace(/^corpus:/, '')}
+                </option>
+              ))}
+            </select>
+
+            {selected && (
+              <div className="picker-actions">
+                <button className="btn btn-sm" onClick={() => openDoc(selected.id)}>Read</button>
+                {confirming === `doc-${selected.id}` ? (
+                  <>
+                    <button className="btn btn-sm danger" onClick={() => { removeDoc(selected.id); setPicked(''); }}>
+                      Confirm
+                    </button>
+                    <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
+                  </>
+                ) : (
+                  <button className="btn-ghost" onClick={() => setConfirming(`doc-${selected.id}`)}>Remove</button>
+                )}
               </div>
-            ))}
+            )}
           </div>
+
+          {selected && (
+            <p className="prov picker-meta">
+              {selected.doc_type.replace(/_/g, ' ')} ·{' '}
+              {Math.round(selected.chars / 1000)}k characters · uploaded{' '}
+              {new Date(selected.created_at).toLocaleDateString('en-GB')}
+            </p>
+          )}
         </div>
       )}
 

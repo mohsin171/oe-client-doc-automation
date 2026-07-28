@@ -1554,3 +1554,18 @@ textarea.tall { min-height: 230px; }
 }
 .chip-btn.on .chip-count { background: rgba(56,117,174,0.16); color: var(--steel); }
 .filters { margin-bottom: 18px; }
+
+/* One letter at a time, rather than a wall of twenty rows. */
+.picker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.picker select {
+  /* Basis of zero, not auto: the option names are long, so a content-width basis
+     makes the select claim the whole row and pushes the buttons onto a second
+     line. From zero it simply fills whatever the buttons leave. */
+  flex: 1 1 0; min-width: 0;
+}
+.picker-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.picker-actions .btn-ghost {
+  padding: 6px 12px; border: 1px solid transparent; border-radius: 8px; font-size: 0.78rem;
+}
+.picker-actions .btn-ghost:hover { color: var(--red); background: var(--red-bg); border-color: #E6C3C0; }
+.picker-meta { margin-top: 10px; }
