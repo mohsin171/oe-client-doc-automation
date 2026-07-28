@@ -82,9 +82,16 @@ export default function DocumentFinal({
               && flat.includes(firmName.toLowerCase())
               && (!branding.address || flat.includes(String(branding.address).toLowerCase()));
             if (isLetterheadLine) return null;
-            if (flat === String(doc.client_name || '').trim().toLowerCase()) return null;
+
+            // The recipient block sometimes carries the name and the address together.
+            const clientName = String(doc.client_name || '').trim().toLowerCase();
+            const clientAddr = String(doc.client_address || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            if (flat.length < 160 && clientName.length > 3 && flat.includes(clientName)
+              && (!clientAddr || flat.includes(clientAddr) || flat === clientName)) return null;
+
             if (branding.address && flat === String(branding.address).trim().toLowerCase()) return null;
-            if (flat === `our reference: ${doc.reference}`.toLowerCase()) return null;
+            if (flat.startsWith('our reference:')) return null;
+            if (/^\d{1,2}\s+\w+\s+\d{4}$/.test(flat) || /^\d{4}-\d{2}-\d{2}$/.test(flat)) return null;
 
             // A short invariant line is one of the firm's own headings, so it is set
             // as one. Nothing is derived from a block key.
