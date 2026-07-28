@@ -333,9 +333,18 @@ export default async function handler(req, res) {
 
       // Gate two lives inside generate(). It will not call the model while any
       // placeholder is unresolved.
+      // The account of the call the letter is about. Passing only the extracted
+      // fields meant the letter was written from a summary of the notes rather than
+      // from the notes, and every detail that did not fit a field was lost first.
+      const capture = (await sql`
+        SELECT transcript FROM captures
+        WHERE matter_id = ${matterId} AND transcript IS NOT NULL
+        ORDER BY created_at DESC LIMIT 1`)[0];
+
       const result = await generate({
         definition,
         values,
+        narrative: capture?.transcript || '',
         precedents,
         firmName: ctx.firm_name,
         docType: template.doc_type,
