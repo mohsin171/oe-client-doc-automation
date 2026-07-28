@@ -1081,7 +1081,20 @@ textarea.tall { min-height: 230px; }
 .check-blocking { border-left-color: var(--red); }
 .check-advisory { border-left-color: var(--amber); }
 .check-main { min-width: 0; }
-.check-side { display: flex; gap: 8px; flex-shrink: 0; }
+.check-side { display: flex; gap: 8px; flex-shrink: 0; align-items: stretch; }
+
+/* A bordered button and a borderless one do not line up by default: the ghost
+   has no border to account for and its own padding, so it sits high and short
+   beside anything with an outline. Matching the box makes them one row. */
+.check-side .btn-ghost {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+}
+.check-side .btn-ghost:hover { color: var(--red); background: var(--red-bg); border-color: #E6C3C0; }
 
 /* ---- Sign-off, at the foot of the document ---- */
 .letter-actions {
@@ -1242,7 +1255,6 @@ textarea.tall { min-height: 230px; }
   .sig-grid, .name-grid { grid-template-columns: 1fr; }
 }
 
-.check-side { align-items: flex-start; }
 
 .btn-sm.btn-primary { padding: 7px 14px; font-size: 0.82rem; }
 
