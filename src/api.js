@@ -41,6 +41,7 @@ export const api = {
   extractNotes: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'extract', ...body }) }),
   getMatter: (id, view) => req(`/api/matters?id=${id}${view ? `&view=${view}` : ''}`),
   createMatter: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'create', ...body }) }),
+  editClient: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'edit_client', ...body }) }),
   saveFields: (body) => req('/api/matters', { method: 'POST', body: JSON.stringify({ action: 'fields', ...body }) }),
 
   listTemplates: () => req('/api/templates'),

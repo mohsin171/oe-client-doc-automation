@@ -9,6 +9,8 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
   const [draft, setDraft] = useState({});
   const [extra, setExtra] = useState({});
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [profile, setProfile] = useState({});
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
 
@@ -37,6 +39,30 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
     try {
       await api.saveFields({ matterId, values: draft, source: 'manual_fix' });
       setDraft({});
+      await load();
+    } catch (e) { setError(e.message); }
+    setBusy(null);
+  }
+
+  // The client's own details, corrected. Opened with what is on record rather than
+  // empty, so a correction is an edit and not a re-entry.
+  function openEdit() {
+    const get = (k) => fields.find((f) => f.key === k)?.value || '';
+    setProfile({
+      client_legal_name: get('client_legal_name') || matter.client_name || '',
+      client_email: get('client_email') || matter.client_email || '',
+      client_phone: get('client_phone'),
+      client_address: get('client_address'),
+      matter_type: matter.matter_type || '',
+    });
+    setEditing(true);
+  }
+
+  async function saveProfile() {
+    setBusy('profile'); setError(null);
+    try {
+      await api.editClient({ matterId, values: profile });
+      setEditing(false);
       await load();
     } catch (e) { setError(e.message); }
     setBusy(null);
@@ -107,7 +133,57 @@ export default function Matter({ matterId, onBack, onOpenDocument }) {
         </div>
 
         <div className="panel-box">
-          <div className="box-title">Matter record</div>
+          <div className="record-head">
+            <div className="box-title">Matter record</div>
+            {!editing && (
+              <button className="btn btn-sm" onClick={openEdit}>Edit client details</button>
+            )}
+          </div>
+
+          {editing && (
+            <div className="edit-profile">
+              <div className="field-grid">
+                {[
+                  ['client_legal_name', 'Client legal name', 'text'],
+                  ['client_email', 'Client email', 'email'],
+                  ['client_phone', 'Client phone', 'text'],
+                  ['matter_type', 'Matter type', 'text'],
+                  ['client_address', 'Client address', 'textarea'],
+                ].map(([key, label, type]) => (
+                  <div className={type === 'textarea' ? 'field span-2' : 'field'} key={key}>
+                    <label><span>{label}</span></label>
+                    {type === 'textarea' ? (
+                      <textarea
+                        rows={2}
+                        value={profile[key] || ''}
+                        onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
+                      />
+                    ) : (
+                      <input
+                        type={type}
+                        value={profile[key] || ''}
+                        onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="prov">
+                Letters already issued keep the details they were sent with. Only this
+                file and anything drafted from now on change.
+              </p>
+              <div className="btn-row">
+                <button
+                  className="btn-primary btn-sm"
+                  disabled={busy === 'profile' || !String(profile.client_legal_name || '').trim()}
+                  onClick={saveProfile}
+                >
+                  {busy === 'profile' ? 'Saving…' : 'Save'}
+                </button>
+                <button className="btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
           {fields.map((f) => (
             <div className="kv" key={f.key}>
               <div>

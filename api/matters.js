@@ -315,6 +315,76 @@ export default async function handler(req, res) {
 
     // ---------------- Close a matter ----------------
     // Reassignment and cover, owner only.
+    // Correcting the client's own details. Separate from filling a gap, because
+    // these live on the client record as well as this matter, and every other file
+    // for the same client draws from the same row.
+    if (body.action === 'edit_client') {
+      const matterId = Number(body.matterId);
+      const matter = await getMatter(ctx.firm_id, matterId);
+      if (!matter) return bad(res, 'Client not found', 404);
+      if (!(await canSeeMatter(ctx.firm_id, matterId, actorFor(ctx)))) {
+        return bad(res, 'Client not found', 404);
+      }
+
+      const values = body.values || {};
+      const name = String(values.client_legal_name || '').trim();
+      if (!name) return bad(res, 'A client needs a legal name');
+
+      const beforeRow = (await sql`
+        SELECT legal_name, email, phone, address FROM clients
+        WHERE id = ${matter.client_id} AND firm_id = ${ctx.firm_id} LIMIT 1`)[0];
+
+      await sql`
+        UPDATE clients SET
+          legal_name = ${name},
+          email   = COALESCE(NULLIF(${values.client_email || ''}, ''), email),
+          phone   = COALESCE(NULLIF(${values.client_phone || ''}, ''), phone),
+          address = COALESCE(NULLIF(${values.client_address || ''}, ''), address)
+        WHERE id = ${matter.client_id} AND firm_id = ${ctx.firm_id}`;
+
+      if (String(values.matter_type || '').trim()) {
+        await sql`
+          UPDATE matters SET matter_type = ${String(values.matter_type).trim()}
+          WHERE id = ${matterId} AND firm_id = ${ctx.firm_id}`;
+      }
+
+      // The matter record has its own copy, because a letter is generated from the
+      // matter rather than from the client, and a letter issued last year should
+      // still say what it said. Both are updated; issued documents are untouched.
+      for (const key of ['client_legal_name', 'client_email', 'client_phone',
+        'client_address', 'matter_type']) {
+        const v = values[key];
+        if (v === undefined || String(v).trim() === '') continue;
+        await upsertMatterField(matterId, {
+          key: canonicalKey(key),
+          value: String(v).trim(),
+          source: 'manual_fix',
+          provenance: 'Corrected by hand',
+          confidence: 1,
+          isNumeric: false,
+        });
+        await confirmMatterField(matterId, canonicalKey(key), ctx.user_id);
+      }
+
+      // What changed, in the record, because a client's name appearing differently
+      // on two letters is a question somebody will ask.
+      const changed = {};
+      for (const [col, key] of [['legal_name', 'client_legal_name'], ['email', 'client_email'],
+        ['phone', 'client_phone'], ['address', 'client_address']]) {
+        const now = String(values[key] || '').trim();
+        if (now && now !== String(beforeRow?.[col] || '')) {
+          changed[col] = { from: beforeRow?.[col] || null, to: now };
+        }
+      }
+
+      await logEvent({
+        firmId: ctx.firm_id, matterId, actorId: ctx.user_id,
+        kind: 'client_details_corrected', payload: { changed },
+      });
+
+      return ok(res, { changed: Object.keys(changed) });
+    }
+
     if (body.action === 'reassign' || body.action === 'grant' || body.action === 'revoke') {
       if (ctx.role !== 'owner') {
         return bad(res, 'Only the firm owner can change who sees a file', 403);
