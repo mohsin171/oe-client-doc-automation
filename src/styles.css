@@ -1385,16 +1385,11 @@ textarea.tall { min-height: 230px; }
 .sheet-para.tight { margin-bottom: 12px; }
 
 .sheet-close { margin-top: 46px; }
+.sheet-close .sheet-signame { margin-top: 4px; }
 .sheet-regards {
   font-family: 'Nunito Sans', sans-serif; font-weight: 700;
   font-size: 0.92rem; color: var(--nearblack); margin-bottom: 14px;
 }
-.sheet-hand {
-  font-family: 'Allura', Georgia, serif;
-  font-size: 2.6rem; line-height: 1.1; color: var(--nearblack);
-  min-height: 48px; padding-bottom: 2px;
-}
-.sheet-rule { width: 230px; height: 1px; background: #C6CFD9; margin: 4px 0 8px; }
 .sheet-signame {
   font-family: 'Nunito Sans', sans-serif; font-size: 0.88rem;
   font-weight: 700; color: var(--nearblack);
@@ -1549,3 +1544,13 @@ textarea.tall { min-height: 230px; }
   font-style: normal; text-transform: uppercase; letter-spacing: 0.06em;
   font-size: 0.6rem; font-weight: 800; color: var(--faint);
 }
+
+/* A count on a filter, rather than four cards stating the same numbers above a
+   list that already shows them. */
+.chip-count {
+  display: inline-block; margin-left: 7px; padding: 1px 6px;
+  border-radius: 999px; background: var(--light); color: var(--steel);
+  font-size: 0.7rem; font-weight: 800; line-height: 1.5;
+}
+.chip-btn.on .chip-count { background: rgba(56,117,174,0.16); color: var(--steel); }
+.filters { margin-bottom: 18px; }
