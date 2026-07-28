@@ -47,15 +47,28 @@ function salutationFor(name) {
 // framing that should never appear on a letter, so take the first clause and
 // drop anything that reads as an internal aside.
 function subjectFrom(scope, matterType) {
+  const titled = (t) => (t ? String(t).charAt(0).toUpperCase() + String(t).slice(1) : '');
+  const fallback = titled(matterType);
+
   const raw = String(scope || '').trim();
-  if (!raw) return matterType ? matterType.charAt(0).toUpperCase() + matterType.slice(1) : '';
+  if (!raw) return fallback;
 
   const first = raw.split(/[.;]/)[0].trim();
+
+  // Written for the file rather than the client.
   const internal = /\b(client (does not|doesn't|is clear|wants|asked|confirmed)|we (are not|will not be) involved|not involved|firm involved|per (the )?notes|internal)\b/i;
-  if (internal.test(first) || first.length < 4) {
-    return matterType ? matterType.charAt(0).toUpperCase() + matterType.slice(1) : '';
-  }
-  return first.slice(0, 90);
+  if (internal.test(first) || first.length < 4) return fallback;
+
+  // A subject is a label, not a summary. If the first clause runs long it is
+  // prose describing the work, and cutting prose to length produces a sentence
+  // that stops mid-word. The area of work is a better heading than a fragment.
+  if (first.length > 70) return fallback;
+
+  // Reads as an activity rather than a thing. "Reviewing contract and title"
+  // is what the firm will do, not what the letter is about.
+  if (/^\w+ing\b/i.test(first) && fallback) return fallback;
+
+  return first;
 }
 
 // Everything the system already knows. Asking a person for the reference it
