@@ -69,11 +69,30 @@ export default function DocumentFinal({
             <p className="sheet-subject">{String(parts.subject.body).trim()}</p>
           )}
 
-          {body.map((b) => (
-            <p className={isFurniture(b) ? 'sheet-para tight' : 'sheet-para'} key={b.key}>
-              {b.body}
-            </p>
-          ))}
+          {body.map((b) => {
+            const text = String(b.body).trim();
+            const flat = text.replace(/\s+/g, ' ').toLowerCase();
+
+            // Whatever the masthead and the address block already show is not shown
+            // again. A firm whose own letters carry the letterhead has it among its
+            // blocks, which is how a letter ended up with two of each. Matched on the
+            // whole line, since testing for the firm's name inside a block would drop
+            // the opening clause, which begins by naming the firm.
+            const isLetterheadLine = flat.length < 140
+              && flat.includes(firmName.toLowerCase())
+              && (!branding.address || flat.includes(String(branding.address).toLowerCase()));
+            if (isLetterheadLine) return null;
+            if (flat === String(doc.client_name || '').trim().toLowerCase()) return null;
+            if (branding.address && flat === String(branding.address).trim().toLowerCase()) return null;
+            if (flat === `our reference: ${doc.reference}`.toLowerCase()) return null;
+
+            // A short invariant line is one of the firm's own headings, so it is set
+            // as one. Nothing is derived from a block key.
+            const isHeading = b.kind === 'fixed' && text.length < 60 && !/[.;:,]$/.test(text);
+            if (isHeading) return <h3 className="sheet-heading" key={b.key}>{text}</h3>;
+
+            return <p className="sheet-para" key={b.key}>{text}</p>;
+          })}
 
           <div className="sheet-close">
             <div className="sheet-regards">

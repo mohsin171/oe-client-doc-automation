@@ -1586,3 +1586,12 @@ button:disabled { transition: opacity 160ms var(--ease); }
 .btn-ghost.danger:hover { background: var(--red-bg); }
 .danger-zone .box-title { color: var(--red); margin-bottom: 8px; }
 .danger-zone .prov { margin-bottom: 14px; max-width: 620px; }
+
+/* The firm's own headings, as they appear in their letters. Not derived from a
+   block key: that gave every section two headings, theirs and an invented one. */
+.sheet-heading {
+  font-family: 'Nunito Sans', sans-serif; font-weight: 700;
+  font-size: 0.95rem; color: var(--nearblack);
+  margin: 26px 0 10px;
+}
+.sheet-heading:first-of-type { margin-top: 0; }
