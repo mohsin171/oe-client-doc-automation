@@ -391,6 +391,56 @@ export default async function handler(req, res) {
       return ok(res, { approved: true, version: version.version, by: ctx.name });
     }
 
+    // ---------------- Reopen after sign-off ----------------
+    // A signed-off letter with no way to correct it is a dead end, and someone
+    // will work around it by editing the Word file, which is worse: the record
+    // then says one thing and the client received another.
+    if (action === 'reopen') {
+      const documentId = Number(body.documentId);
+      const rows = await sql`
+        SELECT status, current_version FROM documents
+        WHERE firm_id = ${ctx.firm_id} AND id = ${documentId} LIMIT 1`;
+      if (!rows[0]) return bad(res, 'Document not found', 404);
+
+      const current = await getCurrentVersion(ctx.firm_id, documentId);
+      if (!current) return bad(res, 'No version found', 404);
+
+      if (rows[0].status === 'issued') {
+        // An issued version has left the firm. It is immutable, so revising
+        // means a new version beside it, never a change to the one the client
+        // has in their hands.
+        const next = rows[0].current_version + 1;
+        await addDocumentVersion(documentId, {
+          version: next,
+          blocks: current.blocks,
+          mergedValues: current.merged_values,
+          generatedBy: ctx.user_id,
+        });
+        await sql`
+          UPDATE documents SET current_version = ${next}, status = 'in_review'
+          WHERE id = ${documentId}`;
+        await logEvent({
+          firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
+          kind: 'document_revised', payload: { from: rows[0].current_version, to: next },
+        });
+        return ok(res, { reopened: true, version: next, newVersion: true });
+      }
+
+      // Approved but not yet issued: the same version reopens. The earlier
+      // approval stays on the record, because it happened.
+      await setDocumentStatus(ctx.firm_id, documentId, 'in_review');
+      await sql`
+        INSERT INTO flags (document_version_id, severity, code, message, anchor)
+        VALUES (${current.id}, 'advisory', 'reopened_after_signoff',
+                ${'This letter was reopened after being signed off. It needs signing off again '
+                  + 'before it can be sent.'}, NULL)`;
+      await logEvent({
+        firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
+        kind: 'document_reopened', payload: { version: rows[0].current_version },
+      });
+      return ok(res, { reopened: true, version: rows[0].current_version });
+    }
+
     // ---------------- Mark issued ----------------
     if (action === 'issue') {
       const documentId = Number(body.documentId);

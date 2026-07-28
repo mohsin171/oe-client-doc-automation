@@ -263,6 +263,13 @@ export default function Review({ documentId, onBack }) {
                   Mark issued
                 </button>
               )}
+              <button
+                className="btn-ghost"
+                disabled={busy === 'reopen'}
+                onClick={() => run('reopen', () => api.reopen({ documentId }))}
+              >
+                {doc.status === 'issued' ? 'Revise as a new version' : 'Reopen for changes'}
+              </button>
             </div>
           </>
         ) : me?.canApprove ? (
