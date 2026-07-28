@@ -333,19 +333,29 @@ export default function Templates() {
           )}
 
           {/* Twenty letters as twenty rows is a wall. One at a time is how they
-              are actually read: pick the one you want. */}
+              are actually read: pick the one you want. The card carries the name
+              and, once chosen, what it is underneath. */}
           <div className="picker">
-            <select
-              value={picked}
-              onChange={(e) => { setPicked(e.target.value); setConfirming(null); }}
-            >
-              <option value="">Choose a letter…</option>
-              {onFile.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {String(d.section_key || '').replace(/^corpus:/, '')}
-                </option>
-              ))}
-            </select>
+            <div className="picker-field">
+              <select
+                value={picked}
+                onChange={(e) => { setPicked(e.target.value); setConfirming(null); }}
+                aria-label="Choose a letter"
+              >
+                <option value="">Choose a letter…</option>
+                {onFile.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {String(d.section_key || '').replace(/^corpus:/, '')}
+                  </option>
+                ))}
+              </select>
+              <p className="picker-meta">
+                {selected
+                  ? `${selected.doc_type.replace(/_/g, ' ')} · ${Math.round(selected.chars / 1000)}k characters `
+                    + `· uploaded ${new Date(selected.created_at).toLocaleDateString('en-GB')}`
+                  : `${onFile.length} on file`}
+              </p>
+            </div>
 
             {selected && (
               <div className="picker-actions">
@@ -363,14 +373,6 @@ export default function Templates() {
               </div>
             )}
           </div>
-
-          {selected && (
-            <p className="prov picker-meta">
-              {selected.doc_type.replace(/_/g, ' ')} ·{' '}
-              {Math.round(selected.chars / 1000)}k characters · uploaded{' '}
-              {new Date(selected.created_at).toLocaleDateString('en-GB')}
-            </p>
-          )}
         </div>
       )}
 
