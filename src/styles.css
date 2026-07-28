@@ -812,3 +812,100 @@ textarea.tall { min-height: 230px; }
   .stepdot.now .stepnum { animation: none; }
   .wizard .btn-primary::after { display: none; }
 }
+
+/* ============================================================================
+   TEAM
+   Same rule as the form: motion where it carries meaning. On this page that is
+   who is here, who is you, who has been revoked, and what a destructive action
+   is about to do.
+   ============================================================================ */
+
+/* ---- Invite panel ---- */
+.invite-grid input {
+  border-radius: 11px;
+  transition: border-color 180ms var(--ease), box-shadow 260ms var(--ease), background 180ms var(--ease);
+}
+.invite-grid input:hover:not(:focus) { border-color: #C3D8EC; }
+.invite-grid input:focus {
+  outline: none;
+  border-color: var(--bright);
+  box-shadow:
+    0 0 0 3px rgba(69, 146, 220, 0.14),
+    0 0 18px rgba(69, 146, 220, 0.22);
+}
+.invite-grid .field { transition: transform 200ms var(--ease); }
+.invite-grid .field:focus-within { transform: translateY(-1px); }
+.invite-grid .field:focus-within label span { color: var(--steel); }
+.invite-grid label span { transition: color 180ms var(--ease); }
+
+/* The panel lifts its edge while it is being filled in. */
+.panel-box:has(.invite-grid) {
+  position: relative;
+  transition: border-color 320ms var(--ease), box-shadow 320ms var(--ease);
+}
+.panel-box:has(.invite-grid):focus-within {
+  border-color: rgba(69, 146, 220, 0.34);
+  box-shadow: 0 0 24px rgba(69, 146, 220, 0.12), var(--shadow-lift);
+}
+
+/* ---- People ---- */
+.rows .row { position: relative; }
+.rows .row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(180deg, var(--bright), var(--steel));
+  opacity: 0; transition: opacity 200ms var(--ease);
+}
+.rows .row:hover::before { opacity: 1; }
+
+/* Arriving people settle in rather than all appearing at once. */
+.rows .row { animation: rowIn 380ms var(--ease) both; }
+.rows .row:nth-child(1) { animation-delay: 20ms; }
+.rows .row:nth-child(2) { animation-delay: 55ms; }
+.rows .row:nth-child(3) { animation-delay: 90ms; }
+.rows .row:nth-child(4) { animation-delay: 125ms; }
+.rows .row:nth-child(n+5) { animation-delay: 160ms; }
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The owner badge earns a glow. It is the one role that can change the firm. */
+.badge.owner {
+  box-shadow: 0 0 14px rgba(69, 146, 220, 0.34);
+  transition: box-shadow 240ms var(--ease);
+}
+.rows .row:hover .badge.owner { box-shadow: 0 0 20px rgba(69, 146, 220, 0.52); }
+
+/* Someone revoked fades rather than vanishing, so it is clear they were here. */
+.rows .row.dim { transition: opacity 320ms var(--ease), filter 320ms var(--ease); filter: grayscale(0.3); }
+.rows .row.dim:hover { opacity: 0.72; }
+
+/* ---- Confirming something destructive ---- */
+.row-side .btn-ghost { transition: color 160ms var(--ease), background 160ms var(--ease); border-radius: 7px; }
+.row-side .btn-ghost:hover { color: var(--red); background: var(--red-bg); }
+
+/* The confirm pair arrives distinctly, so it is never mistaken for the button
+   that was there a moment ago. */
+.row-side .btn { animation: confirmIn 260ms var(--ease) both; }
+@keyframes confirmIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- Invite button ---- */
+.panel-box .btn-primary { position: relative; overflow: hidden; }
+.panel-box .btn-primary:hover:not(:disabled) {
+  box-shadow: 0 10px 30px rgba(69, 146, 220, 0.40), 0 0 0 1px rgba(69, 146, 220, 0.20);
+}
+.panel-box .btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+}
+.panel-box .btn-primary:hover:not(:disabled)::after { animation: sheen 780ms var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rows .row { animation: none; }
+  .row-side .btn { animation: none; }
+  .panel-box .btn-primary::after { display: none; }
+}
