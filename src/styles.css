@@ -838,15 +838,14 @@ textarea.tall { min-height: 230px; }
 .invite-grid .field:focus-within label span { color: var(--steel); }
 .invite-grid label span { transition: color 180ms var(--ease); }
 
-/* The panel lifts its edge while it is being filled in. */
+/* The panel itself stays neutral. The field being filled in is already saying
+   where you are, and colouring the box around it as well is one signal too
+   many on a page that is mostly a list. */
 .panel-box:has(.invite-grid) {
   position: relative;
-  transition: border-color 320ms var(--ease), box-shadow 320ms var(--ease);
+  transition: box-shadow 320ms var(--ease);
 }
-.panel-box:has(.invite-grid):focus-within {
-  border-color: rgba(69, 146, 220, 0.34);
-  box-shadow: 0 0 24px rgba(69, 146, 220, 0.12), var(--shadow-lift);
-}
+.panel-box:has(.invite-grid):focus-within { box-shadow: var(--shadow-lift); }
 
 /* ---- People ---- */
 .rows .row { position: relative; }
