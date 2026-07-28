@@ -1100,3 +1100,14 @@ textarea.tall { min-height: 230px; }
 .send-steps li:last-child { border-bottom: none; }
 .send-steps li.now, .send-steps li.done { opacity: 1; }
 .send-steps .prov { margin: 0; }
+
+.mark-amended {
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em;
+  font-weight: 800; color: var(--amber); background: var(--amber-bg);
+  padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+}
+.letter-section.amended {
+  border-left: 2px solid var(--amber);
+  padding-left: 18px; margin-left: -20px;
+}

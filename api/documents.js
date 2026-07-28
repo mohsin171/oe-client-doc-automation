@@ -286,16 +286,46 @@ export default async function handler(req, res) {
       const version = await getCurrentVersion(ctx.firm_id, Number(body.documentId));
       if (!version) return bad(res, 'Document version not found', 404);
 
+      const before = (version.blocks || []).find((b) => b.key === body.blockKey);
+      const wasStandard = before?.kind === 'fixed';
+      const changed = String(before?.body || '') !== String(body.body || '');
+
       const blocks = (version.blocks || []).map((b) =>
-        b.key === body.blockKey ? { ...b, body: body.body, editedByHand: true } : b
+        b.key === body.blockKey
+          ? { ...b, body: body.body, editedByHand: true, amended: wasStandard && changed ? true : b.amended }
+          : b
       );
 
       await sql`
         UPDATE document_versions SET blocks = ${JSON.stringify(blocks)} WHERE id = ${version.id}`;
 
+      // A person may change anything in a letter they are about to put their
+      // name to. The rule was always that the model cannot alter a standard
+      // clause, not that a solicitor cannot. But it must not pass quietly:
+      // this letter now departs from the firm's own terms, and whoever signs
+      // it has to be told, in a way they have to answer rather than notice.
+      if (wasStandard && changed) {
+        const existing = await sql`
+          SELECT id FROM flags
+          WHERE document_version_id = ${version.id} AND code = 'standard_clause_amended'
+            AND anchor = ${body.blockKey} AND status = 'open' LIMIT 1`;
+        if (!existing[0]) {
+          await sql`
+            INSERT INTO flags (document_version_id, severity, code, message, anchor)
+            VALUES (${version.id}, 'blocking', 'standard_clause_amended',
+                    ${'A standard clause has been changed by hand, so this letter no longer '
+                      + "matches the firm's own wording. Confirm the change is intended before signing off."},
+                    ${body.blockKey})`;
+        }
+      }
+
       await logEvent({
         firmId: ctx.firm_id, documentId: Number(body.documentId), actorId: ctx.user_id,
-        kind: 'block_edited', payload: { blockKey: body.blockKey },
+        kind: wasStandard && changed ? 'standard_clause_amended' : 'block_edited',
+        payload: {
+          blockKey: body.blockKey,
+          ...(wasStandard && changed ? { was: String(before.body).slice(0, 500) } : {}),
+        },
       });
 
       return ok(res, { blocks });

@@ -163,15 +163,17 @@ export default function Review({ documentId, onBack }) {
 
             return (
               <section
-                className={`letter-section${drafted ? ' drafted' : ''}${hasFlag ? ' flagged' : ''}`}
+                className={`letter-section${drafted ? ' drafted' : ''}`
+                  + `${b.amended ? ' amended' : ''}${hasFlag ? ' flagged' : ''}`}
                 key={b.key}
               >
-                {!furniture && (
+                {(!furniture || !locked) && (
                   <div className="section-tools">
-                    <h3>{LABEL(b.key)}</h3>
+                    <h3>{furniture ? '' : LABEL(b.key)}</h3>
                     <div className="tool-side">
                       {drafted && <span className="mark-ai">written for this matter</span>}
-                      {b.kind !== 'fixed' && !locked && editing !== b.key && (
+                      {b.amended && <span className="mark-amended">standard clause changed</span>}
+                      {!locked && editing !== b.key && (
                         <button
                           className="btn-ghost"
                           onClick={() => { setEditing(b.key); setEditText(b.body || ''); }}
