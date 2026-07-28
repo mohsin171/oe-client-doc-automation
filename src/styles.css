@@ -1244,30 +1244,9 @@ textarea.tall { min-height: 230px; }
 
 .check-side { align-items: flex-start; }
 
-/* ---- A suggested correction ---- */
-.suggestion {
-  margin-top: 14px; padding: 16px 18px; border-radius: 12px;
-  background: var(--light); border: 1px solid rgba(69,146,220,0.28);
-  animation: stepIn 280ms var(--ease) both;
-}
-.sug-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-.sug-head .prov { margin: 0; }
-.sug-text {
-  margin: 0 0 12px; font-family: Georgia, serif; font-size: 0.94rem;
-  line-height: 1.75; color: var(--ink); white-space: pre-wrap;
-}
-.sug-text.was { color: var(--muted); }
-.sug-current { margin-bottom: 12px; }
-.sug-current summary {
-  cursor: pointer; font-size: 0.8rem; color: var(--steel); font-weight: 600;
-  font-family: 'Nunito Sans', sans-serif;
-}
 .btn-sm.btn-primary { padding: 7px 14px; font-size: 0.82rem; }
 
 /* A check is a stack: the problem and its actions on one row, anything the
    check opens beneath it at full width. */
 .check { display: block; }
 .check-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.needs { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(69,146,220,0.24); }
-.needs .field-grid { margin-bottom: 12px; }
-.needs .prov { margin-top: 10px; }

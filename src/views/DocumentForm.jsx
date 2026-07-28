@@ -86,8 +86,7 @@ export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me,
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
-  onApprove, onIssue, onReopen, onSend, onBack, onSuggest, suggestion, clearSuggestion,
-  onAddFacts, facts, setFacts,
+  onApprove, onIssue, onReopen, onSend, onBack,
 }) {
   const [tab, setTab] = useState('agreement');
   const [acks, setAcks] = useState({});
@@ -216,15 +215,6 @@ export default function DocumentForm({
                           Fix {headingFor({ key: f.fixIn })}
                         </button>
                       )}
-                      {f.fixIn && (
-                        <button
-                          className="btn btn-sm"
-                          disabled={busy === `suggest-${f.id}`}
-                          onClick={() => onSuggest(f.id)}
-                        >
-                          {busy === `suggest-${f.id}` ? 'Thinking…' : 'Suggest a fix'}
-                        </button>
-                      )}
                       {!f.verifiable && (
                         <button className="btn btn-sm" onClick={() => onResolve(f.id)}>Resolved</button>
                       )}
@@ -232,103 +222,6 @@ export default function DocumentForm({
                     </div>
                   )}
                   </div>
-                  {/* A proposal, not a change. Nothing is written until it is
-                      accepted, and the current wording stays visible beside it
-                      so the difference is a decision rather than a surprise. */}
-                  {suggestion?.flagId === f.id && (
-                    <div className="suggestion">
-                      {suggestion.canFix ? (
-                        <>
-                          <div className="sug-head">
-                            <span className="box-title">Suggested wording</span>
-                            {suggestion.note && <span className="prov">{suggestion.note}</span>}
-                          </div>
-                          <blockquote className="sug-text">{suggestion.suggestion}</blockquote>
-                          <details className="sug-current">
-                            <summary>Show the wording it replaces</summary>
-                            <blockquote className="sug-text was">{suggestion.current}</blockquote>
-                          </details>
-                          <div className="btn-row">
-                            <button
-                              className="btn-primary btn-sm"
-                              disabled={busy === 'edit'}
-                              onClick={() => {
-                                setEditing(suggestion.anchor);
-                                setEditText(suggestion.suggestion);
-                                onEditSave(suggestion.anchor, suggestion.suggestion);
-                              }}
-                            >
-                              Use this wording
-                            </button>
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => {
-                                setEditing(suggestion.anchor);
-                                setEditText(suggestion.suggestion);
-                                clearSuggestion();
-                              }}
-                            >
-                              Edit it first
-                            </button>
-                            <button className="btn-ghost" onClick={clearSuggestion}>Discard</button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="box-title">This needs a fact, not different wording</div>
-                          <p className="prov">{suggestion.note}</p>
-
-                          {suggestion.needs?.length > 0 && (
-                            <div className="needs">
-                              <div className="field-grid">
-                                {suggestion.needs.map((meta) => (
-                                  <div className="field" key={meta.key}>
-                                    <label><span>{meta.label}</span></label>
-                                    {meta.type === 'date' ? (
-                                      <input
-                                        type="date"
-                                        value={facts[meta.key] || ''}
-                                        onChange={(e) => setFacts({ ...facts, [meta.key]: e.target.value })}
-                                      />
-                                    ) : meta.type === 'number' ? (
-                                      <div className="affixed">
-                                        {meta.prefix && <span className="affix">{meta.prefix}</span>}
-                                        <input
-                                          inputMode="decimal"
-                                          placeholder="0"
-                                          value={facts[meta.key] || ''}
-                                          onChange={(e) => setFacts({ ...facts, [meta.key]: e.target.value })}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <input
-                                        value={facts[meta.key] || ''}
-                                        onChange={(e) => setFacts({ ...facts, [meta.key]: e.target.value })}
-                                      />
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="btn-row">
-                                <button
-                                  className="btn-primary btn-sm"
-                                  disabled={busy === 'facts'
-                                    || Object.values(facts).every((v) => !String(v).trim())}
-                                  onClick={() => onAddFacts(suggestion.matterId, facts, f.id)}
-                                >
-                                  {busy === 'facts' ? 'Saving…' : 'Record and try again'}
-                                </button>
-                                <button className="btn-ghost" onClick={clearSuggestion}>Cancel</button>
-                              </div>
-                              <p className="prov">
-                                Saved against the client, so every later document uses it too.
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

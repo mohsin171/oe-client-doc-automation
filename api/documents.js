@@ -12,7 +12,7 @@ import {
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
-import { generate, runDeterministicRules, isVerifiable, suggestFix, factsNeededFor } from '../lib/engine.js';
+import { generate, runDeterministicRules, isVerifiable } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS, fieldMeta } from '../lib/fields.js';
 import { fixTargetFor } from '../lib/letter.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
@@ -200,9 +200,6 @@ export default async function handler(req, res) {
         // Where the problem shows is f.anchor. Where the correction goes is
         // this, and they are often different passages.
         fixIn: fixTargetFor(f, blocks),
-        // And where the problem is a missing fact rather than wording, what
-        // needs supplying.
-        needs: factsNeededFor(f.code).map((k) => fieldMeta(k)),
       }));
 
       const approvals = await sql`
@@ -405,71 +402,6 @@ export default async function handler(req, res) {
     }
 
     // ---------------- Resolve or dismiss a flag ----------------
-    // Ask the model to propose a correction for one flagged passage. Returns
-    // wording; changes nothing. Applying it is a separate, deliberate act.
-    if (action === 'suggest') {
-      const documentId = Number(body.documentId);
-      const version = await getCurrentVersion(ctx.firm_id, documentId);
-      if (!version) return bad(res, 'Document version not found', 404);
-
-      const flagRows = await sql`
-        SELECT code, message, anchor FROM flags
-        WHERE id = ${Number(body.flagId)} AND document_version_id = ${version.id} LIMIT 1`;
-      const flag = flagRows[0];
-      if (!flag) return bad(res, 'Flag not found', 404);
-      if (!flag.anchor) {
-        return bad(res, 'This check does not point at a particular passage, so there is nothing to rewrite.', 422);
-      }
-
-      const target = fixTargetFor(flag, version.blocks || []);
-      if (!target) {
-        return bad(res, 'This one cannot be corrected by rewording a passage. '
-          + 'It needs a fact adding to the client record, or a judgement recorded against it.', 422);
-      }
-
-      const block = (version.blocks || []).find((b) => b.key === target);
-      if (!block) return bad(res, 'That passage is no longer in the letter', 404);
-
-      const docRows = await sql`
-        SELECT template_id, doc_type, matter_id FROM documents
-        WHERE firm_id = ${ctx.firm_id} AND id = ${documentId} LIMIT 1`;
-      const precedents = await getPrecedents(ctx.firm_id, docRows[0]?.doc_type || '');
-
-      const result = await suggestFix({
-        block,
-        values: version.merged_values || {},
-        problem: flag.message,
-        firmName: ctx.firm_name,
-        precedents,
-      });
-
-      if (!result.ok) {
-        const messages = {
-          protected_clause: 'This is one of the firm\'s standard clauses, so it is not rewritten. '
-            + 'If the letter is missing something the clause refers to, correct the passage that should contain it.',
-          nothing_to_fix: 'There is no text in that passage to correct.',
-          unparseable: 'Could not produce a usable suggestion. Try editing it by hand.',
-        };
-        return bad(res, messages[result.reason] || 'Could not suggest a correction', 422);
-      }
-
-      await logEvent({
-        firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
-        kind: 'suggestion_requested',
-        payload: { flagCode: flag.code, anchor: flag.anchor, canFix: result.canFix },
-      });
-
-      return ok(res, {
-        canFix: result.canFix,
-        needs: result.canFix ? [] : factsNeededFor(flag.code).map((k) => fieldMeta(k)),
-        matterId: docRows[0]?.matter_id,
-        note: result.note,
-        suggestion: result.suggestion || null,
-        current: block.body,
-        anchor: flag.anchor,
-      });
-    }
-
     if (action === 'flag') {
       const current = await sql`
         SELECT f.code FROM flags f
