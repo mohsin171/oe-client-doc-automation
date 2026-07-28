@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import Letter from './Letter.jsx';
 
 const LABEL = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -11,6 +12,7 @@ export default function Review({ documentId, onBack }) {
   const [editText, setEditText] = useState('');
   const [dismissing, setDismissing] = useState(null);
   const [reason, setReason] = useState('');
+  const [view, setView] = useState('review');
 
   async function load() {
     try { setState({ loading: false, ...(await api.getDocument(documentId)) }); }
@@ -21,7 +23,7 @@ export default function Review({ documentId, onBack }) {
   if (state.loading) return <p className="muted">Loading…</p>;
   if (state.error) return <div className="notice err">{state.error}</div>;
 
-  const { document: doc, version, flags = [], approvals = [], me } = state;
+  const { document: doc, version, flags = [], approvals = [], me, firm, salutation } = state;
   const blocks = version?.blocks || [];
   const open = flags.filter((f) => f.status === 'open');
   const blocking = open.filter((f) => f.severity === 'blocking');
@@ -32,6 +34,18 @@ export default function Review({ documentId, onBack }) {
     try { await fn(); await load(); } catch (e) { setError(e.message); }
     setBusy(null);
   };
+
+  if (view === 'letter') {
+    return (
+      <Letter
+        document={doc}
+        version={version}
+        firm={firm}
+        salutation={salutation}
+        onBack={() => setView('review')}
+      />
+    );
+  }
 
   return (
     <>
@@ -44,7 +58,10 @@ export default function Review({ documentId, onBack }) {
             {doc.client_name} · {doc.reference} · version {version?.version}
           </div>
         </div>
-        <span className={`badge ${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
+        <div className="row-side">
+          <button className="btn btn-sm" onClick={() => setView('letter')}>View as letter</button>
+          <span className={`badge ${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
+        </div>
       </div>
 
       {error && <div className="notice err">{error}</div>}

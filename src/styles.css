@@ -897,3 +897,121 @@ textarea.tall { min-height: 230px; }
   .row-side .btn { animation: none; }
   .panel-box .btn-primary::after { display: none; }
 }
+
+/* ============================================================================
+   THE LETTER
+   A document, not a screen. Serif body, generous measure, white page on the
+   canvas. The point is that a fee earner sees exactly what the client will.
+   ============================================================================ */
+.letter-page { max-width: 900px; margin: 0 auto; }
+.letter-bar {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.letter-bar .back { margin-bottom: 0; }
+
+.letter {
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  padding: 56px 64px 48px; box-shadow: 0 2px 6px rgba(15,24,38,0.05), 0 18px 50px rgba(15,24,38,0.07);
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #14202E; line-height: 1.75;
+  animation: stepIn var(--slow) var(--ease) both;
+}
+
+.letter-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 24px; padding-bottom: 22px; border-bottom: 2px solid var(--nearblack);
+  margin-bottom: 30px;
+}
+.letter-brand { display: flex; align-items: center; gap: 14px; }
+.letter-firm {
+  font-family: 'Quicksand', sans-serif; font-weight: 700;
+  font-size: 1.22rem; color: var(--nearblack); letter-spacing: -0.01em;
+}
+.letter-address { font-size: 0.82rem; color: var(--muted); margin-top: 3px; font-family: 'Nunito Sans', sans-serif; }
+.letter-meta {
+  text-align: right; font-size: 0.82rem; color: var(--muted);
+  font-family: 'Nunito Sans', sans-serif; line-height: 1.7; white-space: nowrap;
+}
+
+.letter-recipient { margin-bottom: 26px; font-size: 0.95rem; }
+.letter-recipient .pre { white-space: pre-wrap; }
+.letter-salutation { margin-bottom: 22px; font-size: 0.98rem; }
+
+.letter-section { margin-bottom: 26px; }
+.letter-section h3 {
+  font-family: 'Quicksand', sans-serif; font-size: 1.05rem; font-weight: 700;
+  color: var(--nearblack); margin-bottom: 10px;
+}
+.letter-body { margin: 0; font-size: 0.97rem; white-space: pre-wrap; }
+
+/* ---- Acknowledgements ---- */
+.ack {
+  display: flex; align-items: flex-start; gap: 11px; margin-top: 14px;
+  padding: 11px 14px; border-radius: 9px; cursor: pointer;
+  background: var(--canvas); border: 1px solid var(--line);
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.86rem; line-height: 1.5;
+  transition: background 180ms var(--ease), border-color 180ms var(--ease), box-shadow 220ms var(--ease);
+}
+.ack:hover { border-color: #C3D8EC; }
+.ack input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ack-box {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+  border: 1.5px solid #B9C8D9; background: #fff; position: relative;
+  transition: background 180ms var(--ease), border-color 180ms var(--ease), transform 180ms var(--ease);
+}
+.ack-box::after {
+  content: ''; position: absolute; left: 5px; top: 1px;
+  width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0); transform-origin: center;
+  transition: transform 200ms var(--ease);
+}
+.ack.on { background: var(--green-bg); border-color: #BFE3D0; }
+.ack.on .ack-box { background: var(--green); border-color: var(--green); }
+.ack.on .ack-box::after { transform: rotate(45deg) scale(1); }
+.ack input:focus-visible + .ack-box { box-shadow: 0 0 0 3px rgba(69,146,220,0.22); }
+.ack-text { color: var(--ink); }
+
+/* ---- Signature ---- */
+.letter-sign { margin-top: 42px; padding-top: 28px; border-top: 1px solid var(--line); font-family: 'Nunito Sans', sans-serif; }
+.sign-grid { display: grid; grid-template-columns: 1fr 240px; gap: 28px; margin-bottom: 22px; }
+.sign-label {
+  display: block; font-size: 0.85rem; font-weight: 700; color: var(--nearblack); margin-bottom: 8px;
+}
+.sign-label em { color: var(--red); font-style: normal; }
+.sign-pad {
+  position: relative; background: var(--canvas); border-radius: 10px;
+  height: 150px; display: flex; align-items: flex-end; padding: 0 22px 34px;
+}
+.sign-rule { position: absolute; left: 22px; right: 22px; bottom: 30px; height: 1px; background: #C6CFD9; }
+.sign-typed {
+  width: 100%; border: none; background: transparent; padding: 0 0 8px;
+  font-family: 'Segoe Script', 'Snell Roundhand', cursive; font-size: 1.7rem; color: var(--nearblack);
+}
+.sign-typed:focus { outline: none; box-shadow: none; background: transparent; }
+.sign-draw { color: var(--faint); font-size: 0.86rem; padding-bottom: 10px; }
+.sign-modes { display: flex; gap: 16px; justify-content: flex-end; margin-top: 8px; }
+.sign-modes button {
+  background: none; border: none; font-size: 0.85rem; color: var(--muted);
+  padding: 2px 0; border-bottom: 2px solid transparent;
+}
+.sign-modes button.on { color: var(--nearblack); border-bottom-color: var(--steel); }
+.sign-date {
+  background: var(--canvas); border-radius: 10px; padding: 12px 14px;
+  font-size: 0.9rem; color: var(--ink);
+}
+.name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 520px; }
+.name-grid input { background: var(--canvas); border: 1px solid transparent; }
+
+.letter-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-top: 18px;
+}
+.count.ok { background: var(--green-bg); color: var(--green); }
+
+@media (max-width: 720px) {
+  .letter { padding: 30px 24px; }
+  .letter-head { flex-direction: column; }
+  .letter-meta { text-align: left; }
+  .sign-grid, .name-grid { grid-template-columns: 1fr; }
+}

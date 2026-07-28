@@ -107,7 +107,9 @@ export default async function handler(req, res) {
       }
 
       const rows = await sql`
-        SELECT d.*, m.reference, c.legal_name AS client_name
+        SELECT d.*, m.reference, m.matter_type,
+               c.legal_name AS client_name, c.address AS client_address,
+               c.email AS client_email
         FROM documents d
         JOIN matters m ON m.id = d.matter_id
         JOIN clients c ON c.id = m.client_id
@@ -131,6 +133,11 @@ export default async function handler(req, res) {
 
       return ok(res, {
         document, version, flags, approvals,
+        firm: {
+          name: ctx.firm_name,
+          branding: ctx.branding || {},
+        },
+        salutation: salutationFor(document.client_name),
         me: { id: ctx.user_id, name: ctx.name, role: ctx.role, canApprove: canApprove(ctx.role) },
       });
     }
