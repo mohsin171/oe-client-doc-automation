@@ -27,6 +27,7 @@ export default [
         Event: 'readonly', console: 'readonly',
         requestAnimationFrame: 'readonly', setTimeout: 'readonly',
         FileReader: 'readonly', Blob: 'readonly', URL: 'readonly',
+        history: 'readonly', location: 'readonly',
       },
     },
     rules: { 'no-undef': 'error' },

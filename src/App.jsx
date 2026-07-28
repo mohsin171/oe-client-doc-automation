@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api.js';
 import Login from './views/Login.jsx';
 import Queue from './views/Queue.jsx';
@@ -8,6 +8,7 @@ import Templates from './views/Templates.jsx';
 import Documents from './views/Documents.jsx';
 import Team from './views/Team.jsx';
 import FirmMark from './views/FirmMark.jsx';
+import { toPath, fromPath, samePlace } from './routing.js';
 import NewMatter from './views/NewMatter.jsx';
 
 // Three destinations. Adding a client is an action taken on the client list,
@@ -39,9 +40,12 @@ const TITLES = {
 
 export default function App() {
   const [session, setSession] = useState({ loading: true });
-  const [tab, setTab] = useState('clients');
-  const [matterId, setMatterId] = useState(null);
-  const [documentId, setDocumentId] = useState(null);
+  // Opened from the address bar, so a refresh or a shared link lands where it
+  // says rather than on Clients.
+  const opening = fromPath(window.location.pathname);
+  const [tab, setTab] = useState(opening.tab);
+  const [matterId, setMatterId] = useState(opening.matterId);
+  const [documentId, setDocumentId] = useState(opening.documentId);
   const [matters, setMatters] = useState([]);
 
   const loadSession = useCallback(() => {
@@ -75,6 +79,35 @@ export default function App() {
 
   function backToQueue() { setMatterId(null); setDocumentId(null); loadMatters(); }
   function go(next) { setMatterId(null); setDocumentId(null); setTab(next); loadMatters(); }
+
+  // Keep the address bar in step with where you are, and answer the back button.
+  // A replace on first paint, a push thereafter, so the entry you arrived on is
+  // not duplicated.
+  const firstPaint = useRef(true);
+  useEffect(() => {
+    const here = { tab, matterId, documentId };
+    const path = toPath(here);
+    if (firstPaint.current) {
+      firstPaint.current = false;
+      window.history.replaceState(here, '', path);
+      return;
+    }
+    if (window.location.pathname !== path) {
+      window.history.pushState(here, '', path);
+    }
+  }, [tab, matterId, documentId]);
+
+  useEffect(() => {
+    function onPop(e) {
+      const there = e.state || fromPath(window.location.pathname);
+      if (samePlace(there, { tab, matterId, documentId })) return;
+      setTab(there.tab);
+      setMatterId(there.matterId);
+      setDocumentId(there.documentId);
+    }
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [tab, matterId, documentId]);
   function openMatter(id) { setDocumentId(null); setMatterId(id); }
 
   async function signOut() {
