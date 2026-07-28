@@ -26,11 +26,6 @@ export default function DocumentFinal({
   const dateText = new Date().toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
-  const signedOn = doc.client_signed_on
-    ? new Date(doc.client_signed_on).toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    })
-    : null;
 
   // Prose only. The salutation, subject and sign-off are placed by hand, and
   // the confidentiality marking sits above the address as it does on paper.
@@ -88,10 +83,7 @@ export default function DocumentFinal({
             </div>
             <div className="sheet-hand">{doc.client_signature || ''}</div>
             <div className="sheet-rule" />
-            <div className="sheet-signame">
-              {doc.client_signature || doc.client_name}
-              {signedOn && <span className="sheet-sigdate">{signedOn}</span>}
-            </div>
+            <div className="sheet-signame">{firmName}</div>
           </div>
         </div>
 
