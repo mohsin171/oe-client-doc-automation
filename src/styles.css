@@ -1241,3 +1241,6 @@ textarea.tall { min-height: 230px; }
   .df-tabs, .df-body, .df-foot { padding-left: 22px; padding-right: 22px; }
   .sig-grid, .name-grid { grid-template-columns: 1fr; }
 }
+
+.check-note { margin: 8px 0 0; font-size: 0.78rem; }
+.check-side { align-items: flex-start; }

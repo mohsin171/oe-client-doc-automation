@@ -22,7 +22,12 @@ export default [
       ecmaVersion: 2023,
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
-      globals: { window: 'readonly', document: 'readonly', fetch: 'readonly', Event: 'readonly', console: 'readonly' },
+      globals: {
+        window: 'readonly', document: 'readonly', fetch: 'readonly',
+        Event: 'readonly', console: 'readonly',
+        requestAnimationFrame: 'readonly', setTimeout: 'readonly',
+        FileReader: 'readonly', Blob: 'readonly', URL: 'readonly',
+      },
     },
     rules: { 'no-undef': 'error' },
   },

@@ -197,9 +197,33 @@ export default function DocumentForm({
                   </div>
                   {dismissing !== f.id && (
                     <div className="check-side">
-                      <button className="btn btn-sm" onClick={() => onResolve(f.id)}>Resolved</button>
+                      {f.anchor && parts.body.some((b) => b.key === f.anchor) && !locked && (
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => {
+                            const target = parts.body.find((b) => b.key === f.anchor);
+                            setEditing(target.key);
+                            setEditText(target.body || '');
+                            requestAnimationFrame(() => {
+                              window.document
+                                .getElementById(`section-${target.key}`)
+                                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            });
+                          }}
+                        >
+                          Fix this section
+                        </button>
+                      )}
+                      {!f.verifiable && (
+                        <button className="btn btn-sm" onClick={() => onResolve(f.id)}>Resolved</button>
+                      )}
                       <button className="btn-ghost" onClick={() => setDismissing(f.id)}>Dismiss</button>
                     </div>
+                  )}
+                  {dismissing !== f.id && f.verifiable && (
+                    <p className="prov check-note">
+                      This clears itself once the letter is corrected.
+                    </p>
                   )}
                 </div>
               ))}
@@ -212,6 +236,7 @@ export default function DocumentForm({
 
           {sections.map((b) => (
             <section
+              id={`section-${b.key}`}
               className={`df-section${flagged.has(b.key) ? ' flagged' : ''}`}
               key={b.key}
             >

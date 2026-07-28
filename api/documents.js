@@ -12,7 +12,7 @@ import {
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
-import { generate, runDeterministicRules } from '../lib/engine.js';
+import { generate, runDeterministicRules, isVerifiable } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS } from '../lib/fields.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
 
@@ -192,7 +192,8 @@ export default async function handler(req, res) {
       }
 
       const version = await getCurrentVersion(ctx.firm_id, document.id);
-      const flags = version ? await getFlags(version.id) : [];
+      const flags = (version ? await getFlags(version.id) : [])
+        .map((f) => ({ ...f, verifiable: isVerifiable(f.code) }));
 
       const approvals = await sql`
         SELECT a.*, u.name AS approver_name FROM approvals a
@@ -395,17 +396,32 @@ export default async function handler(req, res) {
 
     // ---------------- Resolve or dismiss a flag ----------------
     if (action === 'flag') {
-      const flag = await resolveFlag(Number(body.flagId), ctx.user_id, {
-        dismissed: Boolean(body.dismissed),
-        reason: body.reason,
-      });
-      if (!flag) return bad(res, 'Flag not found', 404);
+      const current = await sql`
+        SELECT f.code FROM flags f
+        JOIN document_versions v ON v.id = f.document_version_id
+        JOIN documents d ON d.id = v.document_id
+        WHERE f.id = ${Number(body.flagId)} AND d.firm_id = ${ctx.firm_id} LIMIT 1`;
+      if (!current[0]) return bad(res, 'Flag not found', 404);
 
       // A dismissal without a reason is not a dismissal. The reason is what
       // makes the audit trail worth having two years later.
       if (body.dismissed && !body.reason) {
         return bad(res, 'A dismissal needs a reason');
       }
+
+      // Marking a check resolved, when the system can see for itself whether it
+      // is resolved, would let a letter go out promising an estimate it does not
+      // contain while the record says somebody dealt with it.
+      if (!body.dismissed && isVerifiable(current[0].code)) {
+        return bad(res, 'This check clears itself once the letter is corrected. '
+          + 'Edit the section, or dismiss it with a reason.', 409);
+      }
+
+      const flag = await resolveFlag(Number(body.flagId), ctx.user_id, {
+        dismissed: Boolean(body.dismissed),
+        reason: body.reason,
+      });
+      if (!flag) return bad(res, 'Flag not found', 404);
 
       await logEvent({
         firmId: ctx.firm_id, documentId: Number(body.documentId), actorId: ctx.user_id,
