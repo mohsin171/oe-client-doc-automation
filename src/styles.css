@@ -1600,3 +1600,37 @@ button.brand {
 button.brand:hover { opacity: 0.86; }
 button.brand:active { transform: scale(0.99); }
 button.brand:focus-visible { outline: 2px solid var(--bright); outline-offset: 4px; }
+
+/* Adding a client, as an invitation on the page rather than a button in the
+   corner. Deliberately the same shape as the drop zone on Your letters, since
+   both are the one thing a firm does to get started. */
+.addzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; gap: 6px; padding: 34px 24px; margin-bottom: 22px;
+  background: var(--canvas);
+  border: 2px dashed #C3D8EC; border-radius: 18px;
+  transition: border-color 180ms var(--ease), background 180ms var(--ease),
+              box-shadow 200ms var(--ease);
+}
+.addzone:hover {
+  border-color: var(--bright); background: var(--light);
+  box-shadow: 0 0 24px rgba(69,146,220,0.10);
+}
+.addzone:active { transform: none; }
+.addzone-mark {
+  width: 46px; height: 46px; border-radius: 50%; margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--bright), var(--steel));
+  color: #fff; font-size: 1.5rem; font-weight: 300; line-height: 1;
+  box-shadow: 0 6px 18px rgba(69,146,220,0.30);
+  transition: transform 200ms var(--ease);
+}
+.addzone:hover .addzone-mark { transform: translateY(-2px) scale(1.03); }
+.addzone-title {
+  font-family: 'Quicksand', sans-serif; font-weight: 700;
+  font-size: 1.06rem; color: var(--nearblack);
+}
+.addzone-sub {
+  font-size: 0.86rem; color: var(--muted); text-align: center;
+  max-width: 420px; line-height: 1.6;
+}

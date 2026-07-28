@@ -234,9 +234,6 @@ export default function App() {
           </nav>
 
           <div className="who">
-            {onQueue && tab === 'clients' && (
-              <button className="btn-primary btn-sm" onClick={() => go('new')}>New client</button>
-            )}
             <button className="btn btn-sm" onClick={signOut}>Sign out</button>
           </div>
         </header>

@@ -59,6 +59,18 @@ export default function Queue({ matters = [], onOpenMatter, onNewMatter }) {
         </div>
       </div>
 
+      {/* The same shape as the drop zone on Your letters: a large, obvious
+          invitation on the page it belongs to, rather than a small button in the
+          corner of the top bar. */}
+      <button className="addzone" onClick={onNewMatter}>
+        <span className="addzone-mark">+</span>
+        <span className="addzone-title">Add a client</span>
+        <span className="addzone-sub">
+          Their details once. Every document on the file then draws from the same
+          record.
+        </span>
+      </button>
+
       <div className="filters">
         {FILTERS.map((f) => (
           counts[f.key] > 0 || f.key === '' ? (
