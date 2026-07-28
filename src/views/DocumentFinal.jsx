@@ -164,9 +164,13 @@ export default function DocumentFinal({
           )}
           <a className="btn-primary" href={api.downloadUrl(doc.id, 'pdf')}>Download PDF</a>
           <button className="btn" onClick={onSend}>Send to client</button>
+          {/* The exception, not a step. Sending from here records itself; this
+              is for a letter posted, handed over, or forwarded from elsewhere,
+              where the letter has gone and the system would otherwise say it
+              never did. */}
           {doc.status === 'approved' && (
             <button className="btn" disabled={busy === 'issue'} onClick={onIssue}>
-              Mark issued
+              Record as sent another way
             </button>
           )}
           <button className="btn-ghost" disabled={busy === 'reopen'} onClick={onReopen}>
