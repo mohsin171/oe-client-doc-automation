@@ -164,7 +164,13 @@ CREATE TABLE IF NOT EXISTS documents (
   status          TEXT NOT NULL DEFAULT 'draft',
   current_version INTEGER NOT NULL DEFAULT 1,
   created_by      INTEGER REFERENCES users(id),
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- The client's signature, either typed by them or recorded by the firm after
+  -- they signed a printed copy. Empty means the letter prints to be signed by hand.
+  client_signature      TEXT,
+  client_signed_on      DATE,
+  signature_recorded_by INTEGER REFERENCES users(id),
+  signature_recorded_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_documents_matter ON documents(matter_id);
 CREATE INDEX IF NOT EXISTS idx_documents_firm_status ON documents(firm_id, status);

@@ -402,6 +402,34 @@ export default async function handler(req, res) {
     }
 
     // ---------------- Resolve or dismiss a flag ----------------
+    // The client's signature. Typed by them, or recorded by the firm after they
+    // signed a printed copy. Who recorded it and when is kept alongside, because
+    // a name typed by a member of staff is a representation that the client
+    // signed, and that should be attributable.
+    if (action === 'signature') {
+      const documentId = Number(body.documentId);
+      const name = String(body.signature || '').trim();
+      const signedOn = String(body.signedOn || '').trim() || null;
+
+      const rows = await sql`
+        UPDATE documents SET
+          client_signature = ${name || null},
+          client_signed_on = ${signedOn},
+          signature_recorded_by = ${name ? ctx.user_id : null},
+          signature_recorded_at = ${name ? new Date().toISOString() : null}
+        WHERE firm_id = ${ctx.firm_id} AND id = ${documentId}
+        RETURNING client_signature, client_signed_on`;
+      if (!rows[0]) return bad(res, 'Document not found', 404);
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId, actorId: ctx.user_id,
+        kind: name ? 'client_signature_recorded' : 'client_signature_cleared',
+        payload: { signedOn },
+      });
+
+      return ok(res, { signature: rows[0].client_signature, signedOn: rows[0].client_signed_on });
+    }
+
     if (action === 'flag') {
       const current = await sql`
         SELECT f.code FROM flags f

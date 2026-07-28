@@ -82,11 +82,25 @@ export default function DocumentFinal({
           <div className="sign-grid">
             <div>
               <label className="sig-label">Signature</label>
-              <div className="sig-pad"><span className="sig-rule" /></div>
+              <div className="sig-pad">
+                {doc.client_signature && (
+                  <span className="sig-written">{doc.client_signature}</span>
+                )}
+                <span className="sig-rule" />
+              </div>
             </div>
             <div>
               <label className="sig-label">Date signed</label>
-              <div className="sig-pad short"><span className="sig-rule" /></div>
+              <div className="sig-pad short">
+                {doc.client_signed_on && (
+                  <span className="sig-written date">
+                    {new Date(doc.client_signed_on).toLocaleDateString('en-GB', {
+                      day: 'numeric', month: 'long', year: 'numeric',
+                    })}
+                  </span>
+                )}
+                <span className="sig-rule" />
+              </div>
             </div>
           </div>
         </div>

@@ -97,6 +97,14 @@ export default function Review({ documentId, onBack }) {
           await api.flag({ documentId, flagId, dismissed: true, reason });
           setDismissing(null); setReason('');
         })}
+        onSaveSignature={(signature, signedOn) => {
+          // Saved quietly on leaving the field. A signature is not something to
+          // make someone press a button for, and losing it because they navigated
+          // away would be worse than a redundant save.
+          api.saveSignature({ documentId, signature, signedOn })
+            .then(() => load())
+            .catch((e) => setError(e.message));
+        }}
         onApprove={() => run('approve', () => api.approve({ documentId }))}
         onIssue={() => run('issue', () => api.issue({ documentId }))}
         onReopen={() => run('reopen', () => api.reopen({ documentId }))}

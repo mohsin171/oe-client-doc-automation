@@ -1303,3 +1303,14 @@ textarea.tall { min-height: 230px; }
   box-shadow: var(--shadow);
 }
 .final-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* A recorded signature, in the letter's own italic serif. */
+.sig-written {
+  font-family: Georgia, 'Times New Roman', serif; font-style: italic;
+  font-size: 1.6rem; color: var(--nearblack); padding-bottom: 8px;
+}
+.sig-written.date { font-size: 1rem; font-style: normal; }
+.df-signature input[type=date] {
+  background: var(--canvas); border: 1px solid transparent;
+  border-radius: 10px; padding: 13px 15px; font-size: 0.92rem;
+}
