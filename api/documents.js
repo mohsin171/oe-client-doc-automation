@@ -14,6 +14,7 @@ import {
 } from '../lib/store.js';
 import { generate, runDeterministicRules, isVerifiable, suggestFix } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS } from '../lib/fields.js';
+import { fixTargetFor } from '../lib/letter.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
 
 function valuesFrom(fields) {
@@ -192,8 +193,14 @@ export default async function handler(req, res) {
       }
 
       const version = await getCurrentVersion(ctx.firm_id, document.id);
-      const flags = (version ? await getFlags(version.id) : [])
-        .map((f) => ({ ...f, verifiable: isVerifiable(f.code) }));
+      const blocks = version?.blocks || [];
+      const flags = (version ? await getFlags(version.id) : []).map((f) => ({
+        ...f,
+        verifiable: isVerifiable(f.code),
+        // Where the problem shows is f.anchor. Where the correction goes is
+        // this, and they are often different passages.
+        fixIn: fixTargetFor(f, blocks),
+      }));
 
       const approvals = await sql`
         SELECT a.*, u.name AS approver_name FROM approvals a
@@ -411,7 +418,13 @@ export default async function handler(req, res) {
         return bad(res, 'This check does not point at a particular passage, so there is nothing to rewrite.', 422);
       }
 
-      const block = (version.blocks || []).find((b) => b.key === flag.anchor);
+      const target = fixTargetFor(flag, version.blocks || []);
+      if (!target) {
+        return bad(res, 'This one cannot be corrected by rewording a passage. '
+          + 'It needs a fact adding to the client record, or a judgement recorded against it.', 422);
+      }
+
+      const block = (version.blocks || []).find((b) => b.key === target);
       if (!block) return bad(res, 'That passage is no longer in the letter', 404);
 
       const docRows = await sql`

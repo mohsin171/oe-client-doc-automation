@@ -197,11 +197,11 @@ export default function DocumentForm({
                   </div>
                   {dismissing !== f.id && (
                     <div className="check-side">
-                      {f.anchor && parts.body.some((b) => b.key === f.anchor) && !locked && (
+                      {f.fixIn && parts.body.some((b) => b.key === f.fixIn) && !locked && (
                         <button
                           className="btn btn-sm"
                           onClick={() => {
-                            const target = parts.body.find((b) => b.key === f.anchor);
+                            const target = parts.body.find((b) => b.key === f.fixIn);
                             setEditing(target.key);
                             setEditText(target.body || '');
                             requestAnimationFrame(() => {
@@ -211,10 +211,10 @@ export default function DocumentForm({
                             });
                           }}
                         >
-                          Fix this section
+                          Fix {headingFor({ key: f.fixIn })}
                         </button>
                       )}
-                      {f.anchor && (
+                      {f.fixIn && (
                         <button
                           className="btn btn-sm"
                           disabled={busy === `suggest-${f.id}`}
