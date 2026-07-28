@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { api } from '../api.js';
 import FirmMark from './FirmMark.jsx';
 import { layoutLetter, isFurniture } from '../../lib/letter.js';
@@ -16,17 +16,8 @@ import { layoutLetter, isFurniture } from '../../lib/letter.js';
 
 export default function DocumentFinal({
   doc, version, firm, salutation, approvals, busy,
-  onSend, onIssue, onReopen, onBack, onSaveSignature,
+  onSend, onIssue, onReopen, onBack,
 }) {
-  // The client signs after the letter has gone, not before it is approved, so
-  // this is where a signature gets recorded. Putting the field on the working
-  // screen assumed the firm signs its own letter into the system, which is not
-  // what happens.
-  const [editing, setEditing] = useState(false);
-  const [sig, setSig] = useState(doc.client_signature || '');
-  const [signedOn, setSignedOn] = useState(
-    doc.client_signed_on ? String(doc.client_signed_on).slice(0, 10) : ''
-  );
   const branding = firm?.branding || {};
   const parts = layoutLetter(version?.blocks || []);
   const approval = approvals?.[0];
@@ -90,38 +81,9 @@ export default function DocumentFinal({
                 ? String(parts.signoff.body).trim().split(',')[0]
                 : 'Yours sincerely'}
             </div>
-            {editing ? (
-              <div className="sheet-sigedit">
-                <input
-                  className="sheet-hand-input"
-                  autoFocus
-                  value={sig}
-                  onChange={(e) => setSig(e.target.value)}
-                  placeholder="Client's name as signed"
-                />
-                <div className="sheet-rule" />
-                <div className="btn-row">
-                  <label className="sheet-siglabel">
-                    <span>Date signed</span>
-                    <input type="date" value={signedOn} onChange={(e) => setSignedOn(e.target.value)} />
-                  </label>
-                  <button
-                    className="btn btn-sm"
-                    disabled={busy === 'signature'}
-                    onClick={() => { onSaveSignature(sig, signedOn); setEditing(false); }}
-                  >
-                    Record
-                  </button>
-                  <button className="btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="sheet-hand">{doc.client_signature || ''}</div>
-                <div className="sheet-rule" />
-                <div className="sheet-signame">{firmName}</div>
-              </>
-            )}
+            <div className="sheet-hand">{doc.client_signature || ''}</div>
+            <div className="sheet-rule" />
+            <div className="sheet-signame">{firmName}</div>
           </div>
         </div>
 
@@ -157,11 +119,6 @@ export default function DocumentFinal({
         )}
 
         <div className="final-actions">
-          {!editing && (
-            <button className="btn" onClick={() => setEditing(true)}>
-              {doc.client_signature ? 'Change the signature' : 'Record the client signature'}
-            </button>
-          )}
           <a className="btn-primary" href={api.downloadUrl(doc.id, 'pdf')}>Download PDF</a>
           <button className="btn" onClick={onSend}>Send to client</button>
           {doc.status === 'approved' && (

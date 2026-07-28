@@ -59,7 +59,6 @@ export const api = {
   regenerate: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'regenerate', ...body }) }),
   editBlock: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'edit_block', ...body }) }),
   sendDocument: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'send', ...body }) }),
-  saveSignature: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'signature', ...body }) }),
   flag: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'flag', ...body }) }),
   approve: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'approve', ...body }) }),
   reopen: (body) => req('/api/documents', { method: 'POST', body: JSON.stringify({ action: 'reopen', ...body }) }),

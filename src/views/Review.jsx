@@ -54,8 +54,6 @@ export default function Review({ documentId, onBack }) {
           onIssue={() => run('issue', () => api.issue({ documentId }))}
           onReopen={() => run('reopen', () => api.reopen({ documentId }))}
           onBack={onBack}
-          onSaveSignature={(signature, signedOn) => run('signature', () =>
-            api.saveSignature({ documentId, signature, signedOn }))}
         />
         {sending && (
           <SendDrawer

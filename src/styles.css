@@ -1424,24 +1424,6 @@ textarea.tall { min-height: 230px; }
   .sheet-contacts { grid-template-columns: 1fr; padding: 20px 24px; }
 }
 
-/* Recording the client's signature on the finished letter. */
-.sheet-sigedit { max-width: 420px; }
-.sheet-hand-input {
-  width: 100%; border: none; background: transparent; padding: 0 0 4px;
-  font-family: 'Allura', Georgia, serif; font-size: 2.4rem; line-height: 1.15;
-  color: var(--nearblack);
-}
-.sheet-hand-input:focus { outline: none; box-shadow: none; background: transparent; }
-.sheet-hand-input::placeholder {
-  font-family: 'Nunito Sans', sans-serif; font-size: 0.85rem; color: var(--faint);
-}
-.sheet-siglabel { display: flex; align-items: center; gap: 10px; }
-.sheet-siglabel span {
-  font-family: 'Nunito Sans', sans-serif; font-size: 0.72rem; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
-}
-.sheet-siglabel input { padding: 7px 10px; font-size: 0.85rem; width: auto; }
-
 /* ---- The send drawer ----
    Three panes: what is about to happen, what has happened before, and the
    message. The middle one scrolls; the other two stay put, so a message is never
