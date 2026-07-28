@@ -1,8 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
-import Letter from './Letter.jsx';
+import FirmMark from './FirmMark.jsx';
 
-const LABEL = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+// One view: the letter as the client will read it, with the review beside it.
+//
+// There used to be two, a technical block listing and a letter preview. The
+// block listing labelled every paragraph MERGED FROM THE MATTER RECORD or
+// STANDARD CLAUSE, which is how the engine thinks rather than how a fee earner
+// reads. Nobody signs off a list of blocks; they sign off a letter.
+//
+// One thing from it was worth keeping. A reviewer has to know which passages
+// the model wrote, because that is where attention belongs and it is why
+// sign-off means anything. That marking survives, quietly, on the drafted
+// sections only.
+
+const LABEL = (k) => String(k || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+function isFurniture(block) {
+  const body = String(block.body || '').trim();
+  if (!body || body.length < 120) return true;
+  return /^(dear|yours|our reference|private and confidential|re:)/i.test(body);
+}
 
 export default function Review({ documentId, onBack }) {
   const [state, setState] = useState({ loading: true });
@@ -12,7 +30,7 @@ export default function Review({ documentId, onBack }) {
   const [editText, setEditText] = useState('');
   const [dismissing, setDismissing] = useState(null);
   const [reason, setReason] = useState('');
-  const [view, setView] = useState('review');
+  const [acks, setAcks] = useState({});
 
   async function load() {
     try { setState({ loading: false, ...(await api.getDocument(documentId)) }); }
@@ -23,11 +41,20 @@ export default function Review({ documentId, onBack }) {
   if (state.loading) return <p className="muted">Loading…</p>;
   if (state.error) return <div className="notice err">{state.error}</div>;
 
-  const { document: doc, version, flags = [], approvals = [], me, firm, salutation } = state;
-  const blocks = version?.blocks || [];
+  const {
+    document: doc, version, flags = [], approvals = [], me, firm, salutation,
+  } = state;
+
+  const branding = firm?.branding || {};
+  const blocks = (version?.blocks || []).filter((b) => String(b.body || '').trim());
   const open = flags.filter((f) => f.status === 'open');
   const blocking = open.filter((f) => f.severity === 'blocking');
   const locked = ['approved', 'issued'].includes(doc.status);
+  const flagged = new Set(flags.filter((f) => f.status === 'open').map((f) => f.anchor));
+
+  const today = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  });
 
   const run = async (key, fn) => {
     setBusy(key); setError(null);
@@ -35,81 +62,135 @@ export default function Review({ documentId, onBack }) {
     setBusy(null);
   };
 
-  if (view === 'letter') {
-    return (
-      <Letter
-        document={doc}
-        version={version}
-        firm={firm}
-        salutation={salutation}
-        onBack={() => setView('review')}
-      />
-    );
-  }
+  const needing = blocks.filter((b) => !isFurniture(b));
+  const acked = needing.filter((b) => acks[b.key]).length;
 
   return (
     <>
-      <button className="back" onClick={onBack}>Back</button>
-
-      <div className="section-head">
+      <div className="row-between">
         <div>
+          <button className="back" onClick={onBack}>Back</button>
           <div className="section-title">{LABEL(doc.doc_type)}</div>
           <div className="section-hint">
             {doc.client_name} · {doc.reference} · version {version?.version}
           </div>
         </div>
-        <div className="row-side">
-          <button className="btn btn-sm" onClick={() => setView('letter')}>View as letter</button>
-          <span className={`badge ${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
-        </div>
+        <span className={`badge ${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
       </div>
 
       {error && <div className="notice err">{error}</div>}
 
       <div className="review-split">
-        <div className="draft-doc">
-          {blocks.map((b) => (
-            <div key={b.key} className={`block block-${b.kind}`}>
-              <div className="block-head">
-                <span className="block-kind">
-                  {b.kind === 'fixed' && 'Standard clause · assembled by code'}
-                  {b.kind === 'field' && 'Merged from the matter record'}
-                  {b.kind === 'bespoke' && 'AI drafted · check this closely'}
-                  {b.editedByHand && ' · edited by hand'}
-                </span>
-                {b.kind !== 'fixed' && !locked && (
-                  <button
-                    className="btn-ghost"
-                    onClick={() => { setEditing(b.key); setEditText(b.body || ''); }}
-                  >
-                    Edit
-                  </button>
-                )}
+        <article className="letter">
+          <header className="letter-head">
+            <div className="letter-brand">
+              <FirmMark branding={branding} name={firm?.name || ''} size={52} />
+              <div>
+                <div className="letter-firm">{branding.letterhead || firm?.name}</div>
+                {branding.address && <div className="letter-address">{branding.address}</div>}
               </div>
-
-              {editing === b.key ? (
-                <>
-                  <textarea rows={6} value={editText} onChange={(e) => setEditText(e.target.value)} />
-                  <div className="btn-row" style={{ marginTop: 8 }}>
-                    <button
-                      className="btn btn-sm"
-                      disabled={busy === 'edit'}
-                      onClick={() => run('edit', async () => {
-                        await api.editBlock({ documentId, blockKey: b.key, body: editText });
-                        setEditing(null);
-                      })}
-                    >
-                      Save
-                    </button>
-                    <button className="btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
-                  </div>
-                </>
-              ) : (
-                <p className="block-body">{b.body || <span className="faint">empty</span>}</p>
-              )}
             </div>
-          ))}
-        </div>
+            <div className="letter-meta">
+              <div>Our reference: {doc.reference}</div>
+              <div>{today}</div>
+            </div>
+          </header>
+
+          <div className="letter-recipient">
+            <div>{doc.client_name}</div>
+            {doc.client_address && <div className="pre">{doc.client_address}</div>}
+          </div>
+
+          <p className="letter-salutation">Dear {salutation || doc.client_name},</p>
+
+          {blocks.map((b) => {
+            const furniture = isFurniture(b);
+            const drafted = b.kind === 'bespoke';
+            const hasFlag = flagged.has(b.key);
+
+            return (
+              <section
+                className={`letter-section${drafted ? ' drafted' : ''}${hasFlag ? ' flagged' : ''}`}
+                key={b.key}
+              >
+                {!furniture && (
+                  <div className="section-tools">
+                    <h3>{LABEL(b.key)}</h3>
+                    <div className="tool-side">
+                      {drafted && <span className="mark-ai">written for this matter</span>}
+                      {b.kind !== 'fixed' && !locked && editing !== b.key && (
+                        <button
+                          className="btn-ghost"
+                          onClick={() => { setEditing(b.key); setEditText(b.body || ''); }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {editing === b.key ? (
+                  <>
+                    <textarea rows={6} value={editText} onChange={(e) => setEditText(e.target.value)} />
+                    <div className="btn-row" style={{ marginTop: 8 }}>
+                      <button
+                        className="btn btn-sm"
+                        disabled={busy === 'edit'}
+                        onClick={() => run('edit', async () => {
+                          await api.editBlock({ documentId, blockKey: b.key, body: editText });
+                          setEditing(null);
+                        })}
+                      >
+                        Save
+                      </button>
+                      <button className="btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="letter-body">{b.body}</p>
+                )}
+
+                {!furniture && !editing && (
+                  <label className={acks[b.key] ? 'ack on' : 'ack'}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(acks[b.key])}
+                      onChange={(e) => setAcks({ ...acks, [b.key]: e.target.checked })}
+                    />
+                    <span className="ack-box" aria-hidden="true" />
+                    <span className="ack-text">I acknowledge this section.</span>
+                  </label>
+                )}
+              </section>
+            );
+          })}
+
+          <div className="letter-sign">
+            <div className="sign-grid">
+              <div>
+                <label className="sign-label">Client <em>*</em></label>
+                <div className="sign-pad">
+                  <div className="sign-draw">Signature</div>
+                  <span className="sign-rule" />
+                </div>
+              </div>
+              <div>
+                <label className="sign-label">Date signed <em>*</em></label>
+                <div className="sign-date">{today}</div>
+              </div>
+            </div>
+            <label className="sign-label">Print name <em>*</em></label>
+            <div className="name-grid">
+              <input placeholder="First" readOnly />
+              <input placeholder="Last" readOnly />
+            </div>
+            <p className="prov" style={{ marginTop: 12 }}>
+              {acked} of {needing.length} sections acknowledged. Captured from the
+              client once sending is built.
+            </p>
+          </div>
+        </article>
 
         <aside className="flags-panel">
           <div className="box-head">
@@ -119,13 +200,13 @@ export default function Review({ documentId, onBack }) {
             </span>
           </div>
 
-          {flags.length === 0 && <p className="box-empty">No flags raised on this version.</p>}
+          {flags.length === 0 && <p className="box-empty">No flags on this version.</p>}
 
           {flags.map((f) => (
             <div key={f.id} className={`flag flag-${f.severity} flag-${f.status}`}>
               <div className="flag-head">
                 <span className={`badge ${f.severity}`}>{f.severity}</span>
-                {f.anchor && <span className="flag-anchor">{f.anchor}</span>}
+                {f.anchor && <span className="flag-anchor">{LABEL(f.anchor)}</span>}
               </div>
               <p className="flag-msg">{f.message}</p>
 
@@ -186,8 +267,7 @@ export default function Review({ documentId, onBack }) {
                 </button>
                 {blocking.length > 0 && (
                   <p className="prov">
-                    {blocking.length} blocking flag{blocking.length > 1 ? 's' : ''} must be
-                    resolved or dismissed first.
+                    {blocking.length} blocking flag{blocking.length > 1 ? 's' : ''} to resolve or dismiss first.
                   </p>
                 )}
               </>
@@ -207,7 +287,6 @@ export default function Review({ documentId, onBack }) {
                 </button>
               </div>
             )}
-
             {doc.status === 'issued' && (
               <a className="btn full" style={{ marginTop: 12 }} href={api.downloadUrl(documentId)}>
                 Download Word
