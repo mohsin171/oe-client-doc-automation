@@ -7,7 +7,7 @@ import {
   Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle,
 } from 'docx';
 import { sql } from '../lib/db.js';
-import { getCurrentVersion, logEvent, canSeeMatter } from '../lib/store.js';
+import { getCurrentVersion, getVersionById, logEvent, canSeeMatter } from '../lib/store.js';
 import { requireContext, actorFor, bad } from '../lib/context.js';
 import { renderLetterPdf } from '../lib/pdf.js';
 
@@ -31,10 +31,52 @@ export default async function handler(req, res) {
   if (!ctx) return;
 
   try {
-    const documentId = Number((req.query || {}).documentId);
-    if (!documentId) return bad(res, 'Supply documentId');
+    const q = req.query || {};
+    const versionId = q.versionId ? Number(q.versionId) : null;
 
-    const format = String((req.query || {}).format || 'pdf').toLowerCase();
+    // A version asked for by id is a historical one: what a client received on a
+    // particular day. It is served whatever the document says now, because the
+    // point of keeping it is that it does not change.
+    if (versionId) {
+      const v = await getVersionById(ctx.firm_id, versionId);
+      if (!v) return bad(res, 'That version was not found', 404);
+      if (!(await canSeeMatter(ctx.firm_id, v.matter_id, actorFor(ctx)))) {
+        return bad(res, 'That version was not found', 404);
+      }
+
+      const pdf = await renderLetterPdf({
+        document: {
+          reference: v.reference,
+          doc_type: v.doc_type,
+          client_name: v.client_name,
+          client_address: v.client_address,
+          client_signature: null,
+          client_signed_on: null,
+        },
+        version: v,
+        firm: { name: ctx.firm_name, branding: ctx.branding || {} },
+        salutation: salutationFor(v.client_name),
+        dateText: new Date(v.generated_at).toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        }),
+      });
+
+      await logEvent({
+        firmId: ctx.firm_id, documentId: v.document_id, actorId: ctx.user_id,
+        kind: 'sent_version_downloaded', payload: { version: v.version },
+      });
+
+      const name = `${v.doc_type}-${String(v.reference).replace(/\//g, '-')}-v${v.version}-as-sent.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+      res.status(200).send(pdf);
+      return;
+    }
+
+    const documentId = Number(q.documentId);
+    if (!documentId) return bad(res, 'Supply documentId or versionId');
+
+    const format = String(q.format || 'pdf').toLowerCase();
 
     const rows = await sql`
       SELECT d.*, m.reference, c.legal_name AS client_name, c.address AS client_address

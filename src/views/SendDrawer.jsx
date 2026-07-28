@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { api } from '../api.js';
 
 // A drawer rather than a dialog, because sending is not a decision taken in
 // isolation: it happens while looking at the letter, and what was sent before
@@ -78,6 +79,14 @@ export default function SendDrawer({
                 </div>
                 {s.subject && <div className="msg-subject">{s.subject}</div>}
                 {s.cover_note && <p className="msg-body">{s.cover_note}</p>}
+                {s.document_version_id && (
+                  <a className="msg-attach" href={api.sentVersionUrl(s.document_version_id)}>
+                    <span className="clip">▣</span>
+                    {String(s.doc_type || 'letter').replace(/_/g, ' ')}
+                    {s.version ? `, version ${s.version}` : ''}
+                    <em>as sent</em>
+                  </a>
+                )}
               </div>
             ))
           )}

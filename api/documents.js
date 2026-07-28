@@ -206,8 +206,13 @@ export default async function handler(req, res) {
 
       const sends = await sql`
         SELECT s.id, s.to_email, s.subject, s.cover_note, s.method, s.sent_at,
-               u.name AS sent_by_name, u.email AS sent_by_email
-        FROM sends s JOIN users u ON u.id = s.sent_by
+               s.document_version_id,
+               u.name AS sent_by_name, u.email AS sent_by_email,
+               v.version, d2.doc_type
+        FROM sends s
+        JOIN users u ON u.id = s.sent_by
+        JOIN document_versions v ON v.id = s.document_version_id
+        JOIN documents d2 ON d2.id = v.document_id
         WHERE s.matter_id = ${document.matter_id}
         ORDER BY s.sent_at DESC`;
 

@@ -1546,3 +1546,19 @@ textarea.tall { min-height: 230px; }
 @media (prefers-reduced-motion: reduce) {
   .drawer, .drawer-head, .drawer-summary, .drawer-thread, .drawer-compose { animation: none; }
 }
+
+/* The letter as it was sent, not as it reads now. */
+.msg-attach {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 10px;
+  padding: 6px 11px; border-radius: 8px; text-decoration: none;
+  background: var(--card); border: 1px solid var(--line);
+  font-size: 0.78rem; font-weight: 600; color: var(--steel);
+  text-transform: capitalize;
+  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.msg-attach:hover { border-color: #B9D3EA; box-shadow: var(--shadow); }
+.msg-attach .clip { color: var(--faint); font-size: 0.9rem; }
+.msg-attach em {
+  font-style: normal; text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 0.6rem; font-weight: 800; color: var(--faint);
+}
