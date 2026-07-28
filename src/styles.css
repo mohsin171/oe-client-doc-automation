@@ -1521,3 +1521,26 @@ button:disabled { transition: opacity 160ms var(--ease); }
   border-radius: 6px; transition: color 160ms var(--ease), background 160ms var(--ease);
 }
 .searchbar-clear:hover { color: var(--ink); background: var(--light); }
+
+/* ---- What the draft was grounded on ----
+   Closed by default. A reviewer does not need it on every letter, but when a
+   drafted paragraph reads oddly the first question is what it was copying. */
+.grounding { margin-bottom: 26px; }
+.grounding summary {
+  cursor: pointer; font-size: 0.8rem; color: var(--steel); font-weight: 600;
+  padding: 8px 12px; border-radius: 9px; background: var(--light);
+  display: inline-block; transition: background 160ms var(--ease);
+}
+.grounding summary:hover { background: rgba(69,146,220,0.14); }
+.grounding ul {
+  list-style: none; margin: 10px 0 0; padding: 0 0 0 12px;
+  border-left: 2px solid var(--line);
+}
+.grounding li {
+  font-size: 0.82rem; color: var(--muted); padding: 4px 0;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.grounding li em {
+  font-style: normal; font-size: 0.62rem; text-transform: uppercase;
+  letter-spacing: 0.06em; font-weight: 800; color: var(--faint);
+}

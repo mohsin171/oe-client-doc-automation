@@ -12,7 +12,7 @@ import { layoutLetter, isFurniture, headingFor } from '../../lib/letter.js';
 // answers it. A signature on page six does not.
 
 export default function DocumentForm({
-  doc, version, firm, salutation, flags, approvals, me,
+  doc, version, firm, salutation, flags, approvals, me, groundedOn = [],
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
   onApprove, onBack,
@@ -156,6 +156,23 @@ export default function DocumentForm({
 
           {parts.subject && (
             <p className="df-subject">{String(parts.subject.body).trim()}</p>
+          )}
+
+          {groundedOn.length > 0 && (
+            <details className="grounding">
+              <summary>
+                Drafted from {groundedOn.length} of your own letters
+                {groundedOn.some((g) => !g.matched) && ' (some chosen by date)'}
+              </summary>
+              <ul>
+                {groundedOn.map((g) => (
+                  <li key={g.name}>
+                    {g.name}
+                    {!g.matched && <em>nearest by date</em>}
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
 
           {sections.map((b) => (

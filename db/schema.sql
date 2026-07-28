@@ -147,8 +147,13 @@ CREATE TABLE IF NOT EXISTS precedents (
   doc_type      TEXT NOT NULL,
   section_key   TEXT,
   body          TEXT NOT NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Searchable, so drafting can be shown the letters closest to the matter in
+  -- hand rather than the five most recent. Generated rather than maintained, so
+  -- it cannot fall out of step with the text it indexes.
+  tsv           tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(body, ''))) STORED
 );
+CREATE INDEX IF NOT EXISTS idx_precedents_tsv ON precedents USING GIN (tsv);
 
 -- ---------------------------------------------------------------
 -- Documents, versions, flags, approvals

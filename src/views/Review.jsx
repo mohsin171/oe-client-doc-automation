@@ -32,7 +32,10 @@ export default function Review({ documentId, onBack }) {
   if (state.loading) return <p className="muted">Loading…</p>;
   if (state.error) return <div className="notice err">{state.error}</div>;
 
-  const { document: doc, version, flags = [], approvals = [], me, firm, salutation } = state;
+  const {
+    document: doc, version, flags = [], approvals = [], me, firm, salutation,
+    groundedOn = [],
+  } = state;
 
   // Signed off is a different screen, not the same screen with its controls
   // hidden. The working view carries checks, edit tools and marks showing which
@@ -89,6 +92,7 @@ export default function Review({ documentId, onBack }) {
         flags={flags}
         approvals={approvals}
         me={me}
+        groundedOn={groundedOn}
         busy={busy}
         editing={editing}
         editText={editText}

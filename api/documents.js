@@ -15,6 +15,7 @@ import {
 import { generate, runDeterministicRules, isVerifiable } from '../lib/engine.js';
 import { canonicalKey, isSystemField, SYSTEM_FIELDS, fieldMeta } from '../lib/fields.js';
 import { fixTargetFor } from '../lib/letter.js';
+import { queryForMatter, describeGrounding } from '../lib/relevance.js';
 import { renderLetterPdf } from '../lib/pdf.js';
 import { sendDocumentEmail, emailConfigured } from '../lib/email.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
@@ -195,6 +196,18 @@ export default async function handler(req, res) {
       }
 
       const version = await getCurrentVersion(ctx.firm_id, document.id);
+      // What this version was grounded on. Read from the audit trail rather than
+      // stored on the version, because it is a fact about how the draft was made
+      // and that is what the trail is for. Keeping it out of merged_values also
+      // matters: the checks scan those values for stray figures, and a list of
+      // filenames in there would confuse them.
+      const groundedRows = version ? await sql`
+        SELECT payload FROM events
+        WHERE firm_id = ${ctx.firm_id} AND document_id = ${Number(id)}
+          AND kind = 'grounded_on'
+        ORDER BY created_at DESC LIMIT 1` : [];
+      const groundedOn = groundedRows[0]?.payload?.letters || [];
+
       const blocks = version?.blocks || [];
       const flags = (version ? await getFlags(version.id) : []).map((f) => ({
         ...f,
@@ -228,7 +241,7 @@ export default async function handler(req, res) {
         ORDER BY a.approved_at DESC`;
 
       return ok(res, {
-        document, version, flags, approvals, sends,
+        document, version, flags, approvals, sends, groundedOn,
         sender: assigned[0] || { name: ctx.name, email: ctx.email },
         canSend: emailConfigured(),
         firm: {
@@ -280,7 +293,13 @@ export default async function handler(req, res) {
       }
 
       const started = Date.now();
-      const precedents = await getPrecedents(ctx.firm_id, template.doc_type);
+      // Shown the firm's closest letters, not its most recent. The query is what
+      // this matter is about, which is the only thing that distinguishes it from
+      // the last one.
+      const precedents = await getPrecedents(ctx.firm_id, template.doc_type, {
+        query: queryForMatter(values, matter),
+        limit: 5,
+      });
 
       // Gate two lives inside generate(). It will not call the model while any
       // placeholder is unresolved.
