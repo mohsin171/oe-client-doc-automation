@@ -1,34 +1,40 @@
 import React from 'react';
 import { api } from '../api.js';
 import FirmMark from './FirmMark.jsx';
-import { layoutLetter, isFurniture, headingFor } from '../../lib/letter.js';
+import { layoutLetter, isFurniture } from '../../lib/letter.js';
 
-// A separate screen, reached only by signing off.
+// The letter as a letter.
 //
-// The working screen has checks, edit controls, a confirmation and marks showing
-// which passages the model wrote. None of that is the letter. This is what the
-// client receives, and seeing it without the apparatus is the last chance to
-// notice something wrong.
+// The working screen shows it as a structure, because that is what a reviewer
+// needs: headings, marks on the drafted passages, a check against each problem.
+// A client receives none of that. They receive a masthead, an address, a
+// salutation, continuous prose, and a name at the bottom.
 //
-// Going back is possible and is deliberately not free: it reopens the letter and
-// the sign-off has to be given again, because the text approved and the text sent
-// must be the same text.
+// The headings in particular have to go. They exist so a reviewer can find a
+// clause and a flag can point at one. On the page they make an engagement letter
+// look like a form.
 
 export default function DocumentFinal({
   doc, version, firm, salutation, approvals, busy,
-  onDownload, onSend, onIssue, onReopen, onBack,
+  onSend, onIssue, onReopen, onBack,
 }) {
   const branding = firm?.branding || {};
   const parts = layoutLetter(version?.blocks || []);
   const approval = approvals?.[0];
+  const firmName = branding.letterhead || firm?.name || '';
 
   const dateText = new Date().toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
+  const signedOn = doc.client_signed_on
+    ? new Date(doc.client_signed_on).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    })
+    : null;
 
-  const ordered = [
-    parts.confidential, parts.salutation, parts.subject, ...parts.body, parts.signoff,
-  ].filter(Boolean);
+  // Prose only. The salutation, subject and sign-off are placed by hand, and
+  // the confidentiality marking sits above the address as it does on paper.
+  const body = parts.body.filter((b) => String(b.body || '').trim());
 
   return (
     <div className="final">
@@ -37,73 +43,76 @@ export default function DocumentFinal({
         <span className={`badge ${doc.status}`}>{doc.status.replace(/_/g, ' ')}</span>
       </div>
 
-      <article className="letter final-letter">
-        <header className="letter-head">
-          <div className="letter-brand">
-            <FirmMark branding={branding} name={firm?.name || ''} size={52} />
-            <div>
-              <div className="letter-firm">{branding.letterhead || firm?.name}</div>
-              {branding.address && <div className="letter-address">{branding.address}</div>}
-            </div>
-          </div>
-          <div className="letter-meta">
-            <div>Our reference: {doc.reference}</div>
-            <div>{dateText}</div>
-          </div>
-        </header>
-
-        {parts.confidential && (
-          <p className="letter-confidential">{String(parts.confidential.body).trim()}</p>
-        )}
-
-        <div className="letter-recipient">
-          <div>{doc.client_name}</div>
-          {doc.client_address && <div className="pre">{doc.client_address}</div>}
+      <article className="sheet">
+        <div className="sheet-watermark" aria-hidden="true">
+          <FirmMark branding={branding} name={firmName} size={420} />
         </div>
 
-        {!parts.salutation && (
-          <p className="letter-salutation">Dear {salutation || doc.client_name},</p>
-        )}
+        <div className="sheet-inner">
+          <header className="sheet-head">
+            <FirmMark branding={branding} name={firmName} size={62} />
+            <div className="sheet-firm">{firmName}</div>
+          </header>
 
-        {ordered
-          .filter((b) => b !== parts.confidential)
-          .map((b) => (
-            <section className="letter-section" key={b.key}>
-              {!isFurniture(b) && <h3>{headingFor(b)}</h3>}
-              <p
-                className={b === parts.subject ? 'letter-subject' : 'letter-body'}
-              >
-                {b.body}
-              </p>
-            </section>
+          {parts.confidential && (
+            <p className="sheet-confidential">{String(parts.confidential.body).trim()}</p>
+          )}
+
+          <div className="sheet-meta">
+            <div className="sheet-to">
+              <div>{doc.client_name}</div>
+              {doc.client_address && <div className="pre">{doc.client_address}</div>}
+            </div>
+            <div className="sheet-date">{dateText}</div>
+          </div>
+
+          <p className="sheet-salutation">
+            {parts.salutation ? String(parts.salutation.body).trim().replace(/,$/, '') : `Dear ${salutation || doc.client_name}`}
+          </p>
+
+          {parts.subject && (
+            <p className="sheet-subject">{String(parts.subject.body).trim()}</p>
+          )}
+
+          {body.map((b) => (
+            <p className={isFurniture(b) ? 'sheet-para tight' : 'sheet-para'} key={b.key}>
+              {b.body}
+            </p>
           ))}
 
-        <div className="letter-sign">
-          <div className="sign-grid">
-            <div>
-              <label className="sig-label">Signature</label>
-              <div className="sig-pad">
-                {doc.client_signature && (
-                  <span className="sig-written">{doc.client_signature}</span>
-                )}
-                <span className="sig-rule" />
-              </div>
+          <div className="sheet-close">
+            <div className="sheet-regards">
+              {parts.signoff
+                ? String(parts.signoff.body).trim().split(',')[0]
+                : 'Yours sincerely'}
             </div>
-            <div>
-              <label className="sig-label">Date signed</label>
-              <div className="sig-pad short">
-                {doc.client_signed_on && (
-                  <span className="sig-written date">
-                    {new Date(doc.client_signed_on).toLocaleDateString('en-GB', {
-                      day: 'numeric', month: 'long', year: 'numeric',
-                    })}
-                  </span>
-                )}
-                <span className="sig-rule" />
-              </div>
+            <div className="sheet-hand">{doc.client_signature || ''}</div>
+            <div className="sheet-rule" />
+            <div className="sheet-signame">
+              {doc.client_signature || doc.client_name}
+              {signedOn && <span className="sheet-sigdate">{signedOn}</span>}
             </div>
           </div>
         </div>
+
+        <footer className="sheet-foot">
+          <span className="sheet-foot-accent" />
+          <div className="sheet-contacts">
+            {branding.phone && (
+              <div><span className="ci">✆</span>{branding.phone}</div>
+            )}
+            {(branding.website || branding.email) && (
+              <div>
+                <span className="ci">✉</span>
+                {branding.website && <span>{branding.website}</span>}
+                {branding.email && <span>{branding.email}</span>}
+              </div>
+            )}
+            {branding.address && (
+              <div><span className="ci">⌖</span>{branding.address}</div>
+            )}
+          </div>
+        </footer>
       </article>
 
       <footer className="final-foot">
@@ -118,9 +127,7 @@ export default function DocumentFinal({
         )}
 
         <div className="final-actions">
-          <a className="btn-primary" href={api.downloadUrl(doc.id, 'pdf')} onClick={onDownload}>
-            Download PDF
-          </a>
+          <a className="btn-primary" href={api.downloadUrl(doc.id, 'pdf')}>Download PDF</a>
           <button className="btn" onClick={onSend}>Send to client</button>
           {doc.status === 'approved' && (
             <button className="btn" disabled={busy === 'issue'} onClick={onIssue}>

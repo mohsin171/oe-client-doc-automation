@@ -1314,3 +1314,108 @@ textarea.tall { min-height: 230px; }
   background: var(--canvas); border: 1px solid transparent;
   border-radius: 10px; padding: 13px 15px; font-size: 0.92rem;
 }
+
+/* ============================================================================
+   THE SHEET
+   The final letter, laid out as a letter: centred masthead, justified prose, no
+   section headings, a signed close, and a contact band at the foot. Headings
+   exist so a reviewer can find a clause; on the page they make an engagement
+   letter look like a form.
+   ============================================================================ */
+.sheet {
+  position: relative; overflow: hidden;
+  background: #fff; border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(15,24,38,0.06), 0 24px 64px rgba(15,24,38,0.09);
+  animation: stepIn var(--slow) var(--ease) both;
+}
+.sheet-inner { position: relative; z-index: 1; padding: 64px 78px 40px; }
+
+.sheet-watermark {
+  position: absolute; left: 50%; top: 46%;
+  transform: translate(-50%, -50%);
+  opacity: 0.035; pointer-events: none; z-index: 0;
+}
+
+.sheet-head { text-align: center; margin-bottom: 54px; }
+.sheet-head .firm-mark { margin: 0 auto 12px; box-shadow: none; }
+.sheet-firm {
+  font-family: 'Quicksand', sans-serif; font-weight: 700;
+  font-size: 1.02rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--nearblack);
+}
+
+.sheet-confidential {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.74rem; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 22px;
+}
+
+.sheet-meta {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 40px; margin-bottom: 34px;
+}
+.sheet-to {
+  font-family: 'Nunito Sans', sans-serif; font-weight: 700;
+  font-size: 0.92rem; line-height: 1.6; color: var(--nearblack);
+}
+.sheet-to .pre { white-space: pre-wrap; }
+.sheet-date {
+  font-family: 'Nunito Sans', sans-serif; font-weight: 700;
+  font-size: 0.86rem; color: var(--nearblack); white-space: nowrap; padding-top: 22px;
+}
+
+.sheet-salutation {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.95rem;
+  color: var(--ink); margin-bottom: 26px;
+}
+.sheet-subject {
+  font-family: 'Nunito Sans', sans-serif; font-weight: 700;
+  font-size: 0.95rem; color: var(--nearblack); margin-bottom: 24px;
+}
+
+.sheet-para {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.9rem;
+  line-height: 1.85; color: #26303D; text-align: justify;
+  hyphens: auto; margin-bottom: 20px; white-space: pre-wrap;
+}
+.sheet-para.tight { margin-bottom: 12px; }
+
+.sheet-close { margin-top: 46px; }
+.sheet-regards {
+  font-family: 'Nunito Sans', sans-serif; font-weight: 700;
+  font-size: 0.92rem; color: var(--nearblack); margin-bottom: 14px;
+}
+.sheet-hand {
+  font-family: Georgia, 'Times New Roman', serif; font-style: italic;
+  font-size: 1.65rem; color: var(--nearblack); min-height: 40px; line-height: 1.2;
+}
+.sheet-rule { width: 230px; height: 1px; background: #C6CFD9; margin: 4px 0 8px; }
+.sheet-signame {
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.88rem; color: var(--nearblack);
+}
+.sheet-sigdate { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 3px; }
+
+.sheet-foot { position: relative; z-index: 1; margin-top: 46px; }
+.sheet-foot-accent {
+  display: block; height: 7px;
+  background: linear-gradient(90deg,
+    var(--nearblack) 0%, var(--nearblack) 46%,
+    var(--steel) 46%, var(--steel) 100%);
+}
+.sheet-contacts {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  padding: 22px 40px; background: var(--nearblack);
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.76rem; line-height: 1.6;
+  color: rgba(233,241,248,0.9); text-align: center;
+}
+.sheet-contacts > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sheet-contacts .ci {
+  font-size: 0.95rem; color: rgba(233,241,248,0.65); margin-bottom: 2px;
+}
+
+@media (max-width: 820px) {
+  .sheet-inner { padding: 34px 24px 26px; }
+  .sheet-meta { flex-direction: column; gap: 16px; }
+  .sheet-date { padding-top: 0; }
+  .sheet-contacts { grid-template-columns: 1fr; padding: 20px 24px; }
+}
