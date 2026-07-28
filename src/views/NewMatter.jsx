@@ -115,7 +115,7 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
     setChecking(true);
     setConflict(null);
     try {
-      const d = await api.conflictCheck(name);
+      const d = await api.conflictCheck(name, matterId);
       setConflict({ matches: d.matches, name });
     } catch (e) {
       // A check that fails silently is worse than no check: it reads as a clean
@@ -265,7 +265,7 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
 
         {step === 0 && (
           <>
-            {clients.length > 0 && (
+            {!isEdit && clients.length > 0 && (
               <div className="field">
                 <label><span>Already on file</span></label>
                 <select value={clientId} onChange={(e) => pickClient(e.target.value)}>

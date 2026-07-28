@@ -97,7 +97,17 @@ export default async function handler(req, res) {
       // the firm already acts for someone by that name and nothing else: no
       // file, no fee earner, no detail.
       if (view === 'conflict') {
-        const { matches } = await conflictCheck(ctx.firm_id, (req.query || {}).name);
+        // When correcting a file, the client on it is excluded: a file is not in
+        // conflict with itself, and saying it is teaches a reader to ignore the
+        // warning, which costs more than the check is worth.
+        let excludeClientId = null;
+        if ((req.query || {}).matterId) {
+          const own = await getMatter(ctx.firm_id, Number(req.query.matterId));
+          excludeClientId = own?.client_id || null;
+        }
+        const { matches } = await conflictCheck(
+          ctx.firm_id, (req.query || {}).name, excludeClientId,
+        );
         return ok(res, { matches });
       }
 
