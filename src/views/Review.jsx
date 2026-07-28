@@ -62,6 +62,7 @@ export default function Review({ documentId, onBack }) {
             doc={doc}
             firm={firm}
             sender={state.sender}
+            salutation={salutation}
             sends={state.sends || []}
             canSend={state.canSend}
             busy={busy}

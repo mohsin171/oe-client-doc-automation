@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 // matters. Summary at the top, the thread beneath it, the message at the bottom.
 
 export default function SendDrawer({
-  doc, firm, sender, sends = [], canSend, busy, error, onSend, onClose,
+  doc, firm, sender, salutation, sends = [], canSend, busy, error, onSend, onClose,
 }) {
   const firmName = firm?.branding?.letterhead || firm?.name || '';
   const [to, setTo] = useState(doc.client_email || '');
@@ -13,7 +13,7 @@ export default function SendDrawer({
     `${firmName}: your engagement letter (${doc.reference})`
   );
   const [note, setNote] = useState(
-    `Dear ${doc.client_name?.split(' ').slice(-1)[0] || 'Sir or Madam'},\n\n`
+    `Dear ${salutation || doc.client_name || 'Sir or Madam'},\n\n`
     + 'Please find attached our engagement letter for this matter, setting out the '
     + 'terms on which we will act for you and the basis on which we will charge.\n\n'
     + 'Please confirm by return that you agree to these terms, so that we may begin '
@@ -64,6 +64,7 @@ export default function SendDrawer({
         </div>
 
         <div className="drawer-thread">
+          <div className="drawer-thread-label">Sent on this file</div>
           {sends.length === 0 ? (
             <p className="box-empty">Nothing sent on this file yet.</p>
           ) : (
