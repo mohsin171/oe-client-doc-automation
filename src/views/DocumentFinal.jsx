@@ -15,7 +15,7 @@ import { layoutLetter, isFurniture } from '../../lib/letter.js';
 // look like a form.
 
 export default function DocumentFinal({
-  doc, version, firm, salutation, approvals, busy,
+  doc, version, firm, salutation, approvals, sender, busy,
   onSend, onIssue, onReopen, onBack,
 }) {
   const branding = firm?.branding || {};
@@ -81,9 +81,15 @@ export default function DocumentFinal({
                 ? String(parts.signoff.body).trim().split(',')[0]
                 : 'Yours sincerely'}
             </div>
-            <div className="sheet-hand">{doc.client_signature || ''}</div>
+            {/* The close is the firm signing its own letter, so this is the fee
+                earner who acted, not the client. The client's own signature, if
+                the letter ever asks for one, belongs in its own block below. */}
+            <div className="sheet-hand">{sender?.name || ''}</div>
             <div className="sheet-rule" />
-            <div className="sheet-signame">{firmName}</div>
+            <div className="sheet-signame">
+              {sender?.name}
+              <span className="sheet-firmline">{firmName}</span>
+            </div>
           </div>
         </div>
 

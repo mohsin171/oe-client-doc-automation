@@ -575,6 +575,11 @@ export default async function handler(req, res) {
 
       // The letter is attached as it stands, generated now rather than trusting
       // a file someone downloaded earlier and may have edited.
+      const sender = document.assigned_user_id
+        ? (await sql`SELECT name, email FROM users WHERE id = ${document.assigned_user_id} LIMIT 1`)[0]
+        : { name: ctx.name, email: ctx.email };
+
+      // Generated now rather than trusting a file someone downloaded earlier.
       const pdf = await renderLetterPdf({
         document,
         version,
@@ -583,11 +588,8 @@ export default async function handler(req, res) {
         dateText: new Date().toLocaleDateString('en-GB', {
           day: 'numeric', month: 'long', year: 'numeric',
         }),
+        sender,
       });
-
-      const sender = document.assigned_user_id
-        ? (await sql`SELECT name, email FROM users WHERE id = ${document.assigned_user_id} LIMIT 1`)[0]
-        : { name: ctx.name, email: ctx.email };
 
       const filename = `${document.doc_type}-${document.reference.replace(/\//g, '-')}.pdf`;
       const subject = String(body.subject || '').trim()

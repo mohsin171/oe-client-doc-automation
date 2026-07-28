@@ -1396,7 +1396,12 @@ textarea.tall { min-height: 230px; }
 }
 .sheet-rule { width: 230px; height: 1px; background: #C6CFD9; margin: 4px 0 8px; }
 .sheet-signame {
-  font-family: 'Nunito Sans', sans-serif; font-size: 0.88rem; color: var(--nearblack);
+  font-family: 'Nunito Sans', sans-serif; font-size: 0.88rem;
+  font-weight: 700; color: var(--nearblack);
+}
+.sheet-firmline {
+  display: block; font-weight: 400; font-size: 0.82rem;
+  color: var(--muted); margin-top: 2px;
 }
 
 .sheet-foot { position: relative; z-index: 1; margin-top: 46px; }

@@ -79,7 +79,8 @@ export default async function handler(req, res) {
     const format = String(q.format || 'pdf').toLowerCase();
 
     const rows = await sql`
-      SELECT d.*, m.reference, c.legal_name AS client_name, c.address AS client_address
+      SELECT d.*, m.reference, m.assigned_user_id,
+             c.legal_name AS client_name, c.address AS client_address
       FROM documents d
       JOIN matters m ON m.id = d.matter_id
       JOIN clients c ON c.id = m.client_id
@@ -105,6 +106,10 @@ export default async function handler(req, res) {
     });
     const filenameBase = `${document.doc_type}-${document.reference.replace(/\//g, '-')}-v${version.version}`;
 
+    const assigned = document.assigned_user_id
+      ? (await sql`SELECT name FROM users WHERE id = ${document.assigned_user_id} LIMIT 1`)[0]
+      : { name: ctx.name };
+
     if (format === 'pdf') {
       const pdf = await renderLetterPdf({
         document,
@@ -112,6 +117,7 @@ export default async function handler(req, res) {
         firm: { name: ctx.firm_name, branding },
         salutation: salutationFor(document.client_name),
         dateText,
+        sender: assigned,
       });
 
       await logEvent({

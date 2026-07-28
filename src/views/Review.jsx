@@ -49,6 +49,7 @@ export default function Review({ documentId, onBack }) {
           firm={firm}
           salutation={salutation}
           approvals={approvals}
+          sender={state.sender}
           busy={busy}
           onSend={() => setSending(true)}
           onIssue={() => run('issue', () => api.issue({ documentId }))}
