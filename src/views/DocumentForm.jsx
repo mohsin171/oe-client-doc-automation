@@ -87,6 +87,7 @@ export default function DocumentForm({
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
   onApprove, onIssue, onReopen, onSend, onBack, onSuggest, suggestion, clearSuggestion,
+  onAddFacts, facts, setFacts,
 }) {
   const [tab, setTab] = useState('agreement');
   const [acks, setAcks] = useState({});
@@ -176,6 +177,7 @@ export default function DocumentForm({
               </div>
               {open.map((f) => (
                 <div key={f.id} className={`check check-${f.severity}`}>
+                  <div className="check-row">
                   <div className="check-main">
                     <div className="flag-head">
                       <span className={`badge ${f.severity}`}>{f.severity}</span>
@@ -229,6 +231,7 @@ export default function DocumentForm({
                       <button className="btn-ghost" onClick={() => setDismissing(f.id)}>Dismiss</button>
                     </div>
                   )}
+                  </div>
                   {/* A proposal, not a change. Nothing is written until it is
                       accepted, and the current wording stays visible beside it
                       so the difference is a decision rather than a surprise. */}
@@ -272,8 +275,56 @@ export default function DocumentForm({
                         </>
                       ) : (
                         <>
-                          <div className="box-title">Cannot be fixed by rewording</div>
+                          <div className="box-title">This needs a fact, not different wording</div>
                           <p className="prov">{suggestion.note}</p>
+
+                          {suggestion.needs?.length > 0 && (
+                            <div className="needs">
+                              <div className="field-grid">
+                                {suggestion.needs.map((meta) => (
+                                  <div className="field" key={meta.key}>
+                                    <label><span>{meta.label}</span></label>
+                                    {meta.type === 'date' ? (
+                                      <input
+                                        type="date"
+                                        value={facts[meta.key] || ''}
+                                        onChange={(e) => setFacts({ ...facts, [meta.key]: e.target.value })}
+                                      />
+                                    ) : meta.type === 'number' ? (
+                                      <div className="affixed">
+                                        {meta.prefix && <span className="affix">{meta.prefix}</span>}
+                                        <input
+                                          inputMode="decimal"
+                                          placeholder="0"
+                                          value={facts[meta.key] || ''}
+                                          onChange={(e) => setFacts({ ...facts, [meta.key]: e.target.value })}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <input
+                                        value={facts[meta.key] || ''}
+                                        onChange={(e) => setFacts({ ...facts, [meta.key]: e.target.value })}
+                                      />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="btn-row">
+                                <button
+                                  className="btn-primary btn-sm"
+                                  disabled={busy === 'facts'
+                                    || Object.values(facts).every((v) => !String(v).trim())}
+                                  onClick={() => onAddFacts(suggestion.matterId, facts, f.id)}
+                                >
+                                  {busy === 'facts' ? 'Saving…' : 'Record and try again'}
+                                </button>
+                                <button className="btn-ghost" onClick={clearSuggestion}>Cancel</button>
+                              </div>
+                              <p className="prov">
+                                Saved against the client, so every later document uses it too.
+                              </p>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

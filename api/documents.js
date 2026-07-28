@@ -12,8 +12,8 @@ import {
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
   markIssued, setMatterStatus, logEvent, logTime,
 } from '../lib/store.js';
-import { generate, runDeterministicRules, isVerifiable, suggestFix } from '../lib/engine.js';
-import { canonicalKey, isSystemField, SYSTEM_FIELDS } from '../lib/fields.js';
+import { generate, runDeterministicRules, isVerifiable, suggestFix, factsNeededFor } from '../lib/engine.js';
+import { canonicalKey, isSystemField, SYSTEM_FIELDS, fieldMeta } from '../lib/fields.js';
 import { fixTargetFor } from '../lib/letter.js';
 import { requireContext, actorFor, canApprove, ok, bad, readBody } from '../lib/context.js';
 
@@ -200,6 +200,9 @@ export default async function handler(req, res) {
         // Where the problem shows is f.anchor. Where the correction goes is
         // this, and they are often different passages.
         fixIn: fixTargetFor(f, blocks),
+        // And where the problem is a missing fact rather than wording, what
+        // needs supplying.
+        needs: factsNeededFor(f.code).map((k) => fieldMeta(k)),
       }));
 
       const approvals = await sql`
@@ -428,7 +431,7 @@ export default async function handler(req, res) {
       if (!block) return bad(res, 'That passage is no longer in the letter', 404);
 
       const docRows = await sql`
-        SELECT template_id, doc_type FROM documents
+        SELECT template_id, doc_type, matter_id FROM documents
         WHERE firm_id = ${ctx.firm_id} AND id = ${documentId} LIMIT 1`;
       const precedents = await getPrecedents(ctx.firm_id, docRows[0]?.doc_type || '');
 
@@ -458,6 +461,8 @@ export default async function handler(req, res) {
 
       return ok(res, {
         canFix: result.canFix,
+        needs: result.canFix ? [] : factsNeededFor(flag.code).map((k) => fieldMeta(k)),
+        matterId: docRows[0]?.matter_id,
         note: result.note,
         suggestion: result.suggestion || null,
         current: block.body,

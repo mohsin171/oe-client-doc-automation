@@ -15,6 +15,7 @@ export default function Review({ documentId, onBack }) {
   const [reason, setReason] = useState('');
   const [sending, setSending] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
+  const [facts, setFacts] = useState({});
 
   async function load() {
     try { setState({ loading: false, ...(await api.getDocument(documentId)) }); }
@@ -59,7 +60,16 @@ export default function Review({ documentId, onBack }) {
           setSuggestion({ flagId, ...d });
         })}
         suggestion={suggestion}
-        clearSuggestion={() => setSuggestion(null)}
+        clearSuggestion={() => { setSuggestion(null); setFacts({}); }}
+        facts={facts}
+        setFacts={setFacts}
+        onAddFacts={(matterId, values, flagId) => run('facts', async () => {
+          await api.saveFields({ matterId, values, source: 'manual_fix' });
+          setFacts({});
+          // The fact is on the file now, so ask again with it in hand.
+          const d = await api.suggest({ documentId, flagId });
+          setSuggestion({ flagId, ...d });
+        })}
         onEditSave={(key, override) => run('edit', async () => {
           await api.editBlock({ documentId, blockKey: key, body: override ?? editText });
           setEditing(null);

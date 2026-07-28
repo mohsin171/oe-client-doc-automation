@@ -1263,3 +1263,11 @@ textarea.tall { min-height: 230px; }
   font-family: 'Nunito Sans', sans-serif;
 }
 .btn-sm.btn-primary { padding: 7px 14px; font-size: 0.82rem; }
+
+/* A check is a stack: the problem and its actions on one row, anything the
+   check opens beneath it at full width. */
+.check { display: block; }
+.check-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.needs { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(69,146,220,0.24); }
+.needs .field-grid { margin-bottom: 12px; }
+.needs .prov { margin-top: 10px; }
