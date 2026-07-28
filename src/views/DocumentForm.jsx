@@ -229,12 +229,6 @@ export default function DocumentForm({
                       <button className="btn-ghost" onClick={() => setDismissing(f.id)}>Dismiss</button>
                     </div>
                   )}
-                  {dismissing !== f.id && f.verifiable && (
-                    <p className="prov check-note">
-                      This clears itself once the letter is corrected.
-                    </p>
-                  )}
-
                   {/* A proposal, not a change. Nothing is written until it is
                       accepted, and the current wording stays visible beside it
                       so the difference is a decision rather than a surprise. */}

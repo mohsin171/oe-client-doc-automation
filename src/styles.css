@@ -1242,7 +1242,6 @@ textarea.tall { min-height: 230px; }
   .sig-grid, .name-grid { grid-template-columns: 1fr; }
 }
 
-.check-note { margin: 8px 0 0; font-size: 0.78rem; }
 .check-side { align-items: flex-start; }
 
 /* ---- A suggested correction ---- */
