@@ -59,9 +59,7 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 input:focus, textarea:focus, select:focus {
   border-color: var(--bright);
   background: #FFFFFF;
-  box-shadow:
-    0 0 0 3px rgba(69, 146, 220, 0.14),
-    0 0 18px rgba(69, 146, 220, 0.22);
+  box-shadow: 0 0 0 2px rgba(69, 146, 220, 0.16);
 }
 
 .shell { display: flex; min-height: 100vh; position: relative; }
@@ -713,6 +711,14 @@ textarea.tall { min-height: 230px; }
    something is just noise on a screen people use all day.
    ============================================================================ */
 
+/* ---- Focus in the client form, where the field is the content of the screen
+   and a little more presence is warranted ---- */
+.wizard input:focus, .wizard textarea:focus, .wizard select:focus {
+  box-shadow:
+    0 0 0 3px rgba(69, 146, 220, 0.14),
+    0 0 16px rgba(69, 146, 220, 0.18);
+}
+
 /* ---- Focus: a halo that grows rather than snapping on ---- */
 .wizard input,
 .wizard textarea,
@@ -1262,3 +1268,11 @@ textarea.tall { min-height: 230px; }
    check opens beneath it at full width. */
 .check { display: block; }
 .check-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+
+/* A dismissal box sits inside a check that is already coloured and already
+   saying something urgent. It only needs to show which field has focus, not
+   compete with the flag beside it. */
+.dismiss-box input:focus {
+  box-shadow: 0 0 0 2px rgba(69, 146, 220, 0.14);
+  border-color: #9DC3E6;
+}
