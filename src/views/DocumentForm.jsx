@@ -89,7 +89,11 @@ export default function DocumentForm({
   onApprove, onIssue, onReopen, onSend, onBack,
 }) {
   const [tab, setTab] = useState('agreement');
-  const [acks, setAcks] = useState({});
+  // One deliberate confirmation before sign-off, rather than a tick against
+  // every clause. The per-clause version read as though the fee earner were
+  // agreeing to their own firm's terms, which is not what is happening: they
+  // are confirming they have read what they are about to put their name to.
+  const [confirmed, setConfirmed] = useState(false);
   const [sigMode, setSigMode] = useState('draw');
   const [sig, setSig] = useState('');
   const [first, setFirst] = useState('');
@@ -103,7 +107,6 @@ export default function DocumentForm({
   const flagged = new Set(open.map((f) => f.anchor));
 
   const sections = parts.body.filter((b) => !isFurniture(b));
-  const acked = sections.filter((b) => acks[b.key]).length;
 
   const today = new Date().toLocaleDateString('en-GB', {
     day: 'numeric', month: 'long', year: 'numeric',
@@ -267,21 +270,24 @@ export default function DocumentForm({
                 <blockquote className="df-clause">{b.body}</blockquote>
               )}
 
-              {editing !== b.key && (
-                <label className={acks[b.key] ? 'ack on' : 'ack'}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(acks[b.key])}
-                    onChange={(e) => setAcks({ ...acks, [b.key]: e.target.checked })}
-                  />
-                  <span className="ack-box" aria-hidden="true" />
-                  <span className="ack-text">
-                    I, {[first, last].filter(Boolean).join(' ') || '\u2026'}, acknowledge this section.
-                  </span>
-                </label>
-              )}
             </section>
           ))}
+
+          {!locked && (
+            <section className="df-section df-confirm">
+              <label className={confirmed ? 'ack on' : 'ack'}>
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                />
+                <span className="ack-box" aria-hidden="true" />
+                <span className="ack-text">
+                  I have read this letter in full and confirm it is correct to send.
+                </span>
+              </label>
+            </section>
+          )}
 
           <section className="df-section df-signature">
             <div className="sig-grid">
@@ -312,8 +318,7 @@ export default function DocumentForm({
             </div>
 
             <p className="prov" style={{ marginTop: 14 }}>
-              {acked} of {sections.length} sections acknowledged. Captured from the
-              client once sending is built; what you enter here is not stored.
+              The client completes this part. What you type here is not stored.
             </p>
           </section>
         </div>
@@ -341,12 +346,14 @@ export default function DocumentForm({
           </>
         ) : me?.canApprove ? (
           <div className="df-foot-right">
-            {blocking.length > 0 && (
+            {blocking.length > 0 ? (
               <span className="prov">{blocking.length} to clear first</span>
-            )}
+            ) : !confirmed ? (
+              <span className="prov">Confirm you have read it, above</span>
+            ) : null}
             <button
               className="btn-primary"
-              disabled={busy === 'approve' || blocking.length > 0}
+              disabled={busy === 'approve' || blocking.length > 0 || !confirmed}
               onClick={onApprove}
             >
               {busy === 'approve' ? 'Recording…' : 'Sign off'}

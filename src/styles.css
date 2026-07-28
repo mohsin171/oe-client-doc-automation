@@ -1276,3 +1276,12 @@ textarea.tall { min-height: 230px; }
   box-shadow: 0 0 0 2px rgba(69, 146, 220, 0.14);
   border-color: #9DC3E6;
 }
+
+/* The single confirmation before sign-off. Set apart from the clauses, because
+   it is not part of the letter: it is the reader saying they have read it. */
+.df-confirm {
+  margin-top: 34px; padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+.df-confirm .ack { margin: 0; padding: 14px 18px; font-size: 0.9rem; }
+.df-confirm .ack-text { font-weight: 600; }
