@@ -198,6 +198,7 @@ export default async function handler(req, res) {
       const team = await sql`
         SELECT id, name, email, role, active, last_login_at FROM users
         WHERE firm_id = ${ctx.firm_id} ORDER BY active DESC, name`;
+
       return ok(res, { team });
     }
 
@@ -227,23 +228,53 @@ export default async function handler(req, res) {
       const userId = Number(body.userId);
       if (userId === ctx.user_id) return bad(res, 'You cannot revoke your own access');
 
-      await sql`
-        UPDATE users SET active = FALSE
-        WHERE id = ${userId} AND firm_id = ${ctx.firm_id} AND role <> 'owner'`;
+      const target = await sql`
+        SELECT name FROM users
+        WHERE id = ${userId} AND firm_id = ${ctx.firm_id} AND role <> 'owner' LIMIT 1`;
+      if (!target[0]) return bad(res, 'Not found', 404);
 
-      // Existing sessions die immediately. Revoking access has to mean now,
-      // not whenever their cookie happens to expire.
+      // Existing sessions die immediately. Revoking access has to mean now, not
+      // whenever their cookie happens to expire.
       await sql`DELETE FROM sessions WHERE user_id = ${userId}`;
+
+      // Has this person left a mark on the record? approvals.user_id and
+      // sends.sent_by are both NOT NULL with no cascade, so the database would
+      // refuse the delete anyway, and it should: their name is the answer to who
+      // signed this letter off and who sent it. Somebody who never did either can
+      // be removed outright.
+      const history = await sql`
+        SELECT
+          (SELECT count(*) FROM approvals WHERE user_id = ${userId})::int AS approvals,
+          (SELECT count(*) FROM sends WHERE sent_by = ${userId})::int AS sends,
+          (SELECT count(*) FROM documents WHERE created_by = ${userId})::int AS documents,
+          (SELECT count(*) FROM matters WHERE assigned_user_id = ${userId})::int AS matters`;
+      const h = history[0];
+      const leftAMark = h.approvals + h.sends + h.documents + h.matters > 0;
+
+      if (leftAMark) {
+        await sql`UPDATE users SET active = FALSE WHERE id = ${userId} AND firm_id = ${ctx.firm_id}`;
+      } else {
+        await sql`DELETE FROM users WHERE id = ${userId} AND firm_id = ${ctx.firm_id} AND role <> 'owner'`;
+      }
 
       await logEvent({
         firmId: ctx.firm_id, actorId: ctx.user_id,
-        kind: 'team_revoked', payload: { userId },
+        kind: leftAMark ? 'team_revoked' : 'team_deleted',
+        payload: { userId, name: target[0].name, ...(leftAMark ? h : {}) },
       });
 
       const team = await sql`
         SELECT id, name, email, role, active, last_login_at FROM users
         WHERE firm_id = ${ctx.firm_id} ORDER BY active DESC, name`;
-      return ok(res, { team });
+
+      return ok(res, {
+        team,
+        removed: !leftAMark,
+        note: leftAMark
+          ? `${target[0].name} can no longer sign in. Their name stays on the letters `
+            + 'they signed off and sent, which is the point of keeping a record.'
+          : `${target[0].name} has been removed.`,
+      });
     }
 
     return bad(res, 'Unknown action');

@@ -7,6 +7,7 @@ export default function Team() {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(null);
+  const [note, setNote] = useState(null);
 
   async function load() {
     try { setState({ loading: false, ...(await api.team()) }); }
@@ -41,6 +42,7 @@ export default function Team() {
         </div>
 
         {error && <div className="notice err">{error}</div>}
+      {note && <div className="notice info">{note}</div>}
 
         {canManage && (
           <div className="panel-box">
@@ -110,6 +112,9 @@ export default function Team() {
                         onClick={() => run(u.id, async () => {
                           const d = await api.teamRevoke({ userId: u.id });
                           setConfirming(null);
+                          // Say which of the two happened. Removed outright, or kept
+                          // because their name is on a letter somebody may ask about.
+                          setNote(d.note || null);
                           return d;
                         })}
                       >
