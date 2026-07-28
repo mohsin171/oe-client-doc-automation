@@ -336,7 +336,11 @@ export default function Templates() {
               are actually read: pick the one you want. The card carries the name
               and, once chosen, what it is underneath. */}
           <div className="picker">
-            <div className="picker-field">
+            {/* The select and its actions share a line, so the dropdown arrow and
+                the buttons sit on the same axis. The detail sits under the whole
+                card rather than under the select, which is what pushed the two
+                out of line. */}
+            <div className="picker-row">
               <select
                 value={picked}
                 onChange={(e) => { setPicked(e.target.value); setConfirming(null); }}
@@ -349,29 +353,30 @@ export default function Templates() {
                   </option>
                 ))}
               </select>
-              <p className="picker-meta">
-                {selected
-                  ? `${selected.doc_type.replace(/_/g, ' ')} · ${Math.round(selected.chars / 1000)}k characters `
-                    + `· uploaded ${new Date(selected.created_at).toLocaleDateString('en-GB')}`
-                  : `${onFile.length} on file`}
-              </p>
+
+              {selected && (
+                <div className="picker-actions">
+                  <button className="btn btn-sm" onClick={() => openDoc(selected.id)}>Read</button>
+                  {confirming === `doc-${selected.id}` ? (
+                    <>
+                      <button className="btn btn-sm danger" onClick={() => { removeDoc(selected.id); setPicked(''); }}>
+                        Confirm
+                      </button>
+                      <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
+                    </>
+                  ) : (
+                    <button className="btn-ghost" onClick={() => setConfirming(`doc-${selected.id}`)}>Remove</button>
+                  )}
+                </div>
+              )}
             </div>
 
-            {selected && (
-              <div className="picker-actions">
-                <button className="btn btn-sm" onClick={() => openDoc(selected.id)}>Read</button>
-                {confirming === `doc-${selected.id}` ? (
-                  <>
-                    <button className="btn btn-sm danger" onClick={() => { removeDoc(selected.id); setPicked(''); }}>
-                      Confirm
-                    </button>
-                    <button className="btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
-                  </>
-                ) : (
-                  <button className="btn-ghost" onClick={() => setConfirming(`doc-${selected.id}`)}>Remove</button>
-                )}
-              </div>
-            )}
+            <p className="picker-meta">
+              {selected
+                ? `${selected.doc_type.replace(/_/g, ' ')} · ${Math.round(selected.chars / 1000)}k characters `
+                  + `· uploaded ${new Date(selected.created_at).toLocaleDateString('en-GB')}`
+                : `${onFile.length} on file`}
+            </p>
           </div>
         </div>
       )}

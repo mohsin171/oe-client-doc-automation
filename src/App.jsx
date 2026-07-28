@@ -134,13 +134,19 @@ export default function App() {
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-inner">
-          <div className="brand">
+          {/* The masthead is the way back. Every application does this, so it is
+              the first thing a person tries when they are lost in a file. */}
+          <button
+            className="brand"
+            onClick={() => go('clients')}
+            aria-label={`${firmName}, back to clients`}
+          >
             <FirmMark branding={branding} name={firmName} size={40} />
             <div>
               <div className="brand-name">{branding.shortName || firmName}</div>
               <div className="brand-sub">Document automation</div>
             </div>
-          </div>
+          </button>
 
           <div className="side-section">
             <div className="side-label">Workspace</div>
