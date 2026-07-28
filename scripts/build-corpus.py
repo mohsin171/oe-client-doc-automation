@@ -311,8 +311,9 @@ def build_letter(i):
         "",
         FIXED["terms"],
         "",
-        "Please sign and return the enclosed copy of this letter to confirm your agreement to "
-        "these terms so that we may begin work.",
+        "Please confirm by return that you agree to these terms, so that we may begin work. "
+        "If anything in this letter does not match your understanding of what we discussed, "
+        "tell us before you do so.",
         "",
         "Yours sincerely,",
         "",

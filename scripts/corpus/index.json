@@ -1,0 +1,222 @@
+[
+  {
+    "ref": "HF/2026/100",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Mrs Elaine Whitcombe",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 4180,
+    "date": "2026-02-23",
+    "file": "01-employment-HF-2026-100.txt"
+  },
+  {
+    "ref": "HF/2026/101",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr Raymond Osei",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 4800,
+    "date": "2026-05-23",
+    "file": "02-probate-and-estate-administration-HF-2026-101.txt"
+  },
+  {
+    "ref": "HF/2026/102",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Northgate Property Holdings Limited",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 1900,
+    "date": "2026-01-21",
+    "file": "03-probate-and-estate-administration-HF-2026-102.txt"
+  },
+  {
+    "ref": "HF/2026/103",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Ms Priya Raval",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 5100,
+    "date": "2026-05-18",
+    "file": "04-residential-conveyancing-HF-2026-103.txt"
+  },
+  {
+    "ref": "HF/2026/104",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Mr and Mrs J Alderton",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 8840,
+    "date": "2026-07-06",
+    "file": "05-residential-conveyancing-HF-2026-104.txt"
+  },
+  {
+    "ref": "HF/2026/105",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Dr Miriam Cole",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 3225,
+    "date": "2026-04-18",
+    "file": "06-family-HF-2026-105.txt"
+  },
+  {
+    "ref": "HF/2026/106",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Bellweather Trading Limited",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 2560,
+    "date": "2026-04-12",
+    "file": "07-residential-conveyancing-HF-2026-106.txt"
+  },
+  {
+    "ref": "HF/2026/107",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr Stephen Duffy",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 2150,
+    "date": "2026-01-09",
+    "file": "08-probate-and-estate-administration-HF-2026-107.txt"
+  },
+  {
+    "ref": "HF/2026/108",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Mrs Hannah Iqbal",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 4800,
+    "date": "2026-06-29",
+    "file": "09-residential-conveyancing-HF-2026-108.txt"
+  },
+  {
+    "ref": "HF/2026/109",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr Callum Reid",
+    "fee_earner": "Daniel Okoye",
+    "rate": 265,
+    "estimate": 2120,
+    "date": "2026-04-17",
+    "file": "10-probate-and-estate-administration-HF-2026-109.txt"
+  },
+  {
+    "ref": "HF/2026/110",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Fairhurst Joinery Limited",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 1720,
+    "date": "2026-06-09",
+    "file": "11-family-HF-2026-110.txt"
+  },
+  {
+    "ref": "HF/2026/111",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Ms Yvonne Baptiste",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 2720,
+    "date": "2026-03-22",
+    "file": "12-probate-and-estate-administration-HF-2026-111.txt"
+  },
+  {
+    "ref": "HF/2026/112",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr Peter Lindqvist",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 1900,
+    "date": "2026-04-11",
+    "file": "13-probate-and-estate-administration-HF-2026-112.txt"
+  },
+  {
+    "ref": "HF/2026/113",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Mrs Susan Ainsworth",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 1900,
+    "date": "2026-06-15",
+    "file": "14-employment-HF-2026-113.txt"
+  },
+  {
+    "ref": "HF/2026/114",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mrs Elaine Whitcombe",
+    "fee_earner": "Daniel Okoye",
+    "rate": 265,
+    "estimate": 4770,
+    "date": "2026-06-30",
+    "file": "15-probate-and-estate-administration-HF-2026-114.txt"
+  },
+  {
+    "ref": "HF/2026/115",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Mr Raymond Osei",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 3840,
+    "date": "2026-03-12",
+    "file": "16-employment-HF-2026-115.txt"
+  },
+  {
+    "ref": "HF/2026/116",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Northgate Property Holdings Limited",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 5100,
+    "date": "2026-01-23",
+    "file": "17-family-HF-2026-116.txt"
+  },
+  {
+    "ref": "HF/2026/117",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Ms Priya Raval",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 2850,
+    "date": "2026-01-10",
+    "file": "18-family-HF-2026-117.txt"
+  },
+  {
+    "ref": "HF/2026/118",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr and Mrs J Alderton",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 2560,
+    "date": "2026-05-21",
+    "file": "19-probate-and-estate-administration-HF-2026-118.txt"
+  },
+  {
+    "ref": "HF/2026/119",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Dr Miriam Cole",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 2720,
+    "date": "2026-02-10",
+    "file": "20-probate-and-estate-administration-HF-2026-119.txt"
+  }
+]
