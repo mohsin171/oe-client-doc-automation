@@ -81,12 +81,8 @@ export default function DocumentFinal({
                 ? String(parts.signoff.body).trim().split(',')[0]
                 : 'Yours sincerely'}
             </div>
-            {/* Plain type, not a handwriting face. Nobody signed anything: a
-                name rendered in script looks like a signature and is a database
-                field, which is the objection that removed the client's version.
-                A letter from a firm closes with a typed name and needs no more. */}
+            <div className="sheet-hand">{sender?.name || ''}</div>
             <div className="sheet-signame">
-              {sender?.name}
               <span className="sheet-firmline">{firmName}</span>
             </div>
           </div>

@@ -20,6 +20,7 @@ export default function Documents({ onOpenDocument }) {
   const [documents, setDocuments] = useState([]);
   const [scope, setScope] = useState(null);
   const [filter, setFilter] = useState('');
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -41,8 +42,24 @@ export default function Documents({ onOpenDocument }) {
 
   const shown = useMemo(() => {
     const f = FILTERS.find((x) => x.key === filter);
-    return f?.match ? documents.filter(f.match) : documents;
-  }, [documents, filter]);
+    const byState = f?.match ? documents.filter(f.match) : documents;
+
+    const q = query.trim().toLowerCase();
+    if (!q) return byState;
+
+    // A reference is what a firm quotes on the phone, so that is what is searched
+    // first. The client's name is matched too, since a person looking for a letter
+    // will type whichever they have to hand. Slashes are ignored, because 2026/05429
+    // and 202605429 are the same file to whoever is typing.
+    const bare = q.replace(/[^a-z0-9]/g, '');
+    return byState.filter((d) => {
+      const ref = String(d.reference || '').toLowerCase();
+      return ref.includes(q)
+        || ref.replace(/[^a-z0-9]/g, '').includes(bare)
+        || String(d.client_name || '').toLowerCase().includes(q)
+        || String(d.doc_type || '').replace(/_/g, ' ').includes(q);
+    });
+  }, [documents, filter, query]);
 
   return (
     <div className="section">
@@ -55,6 +72,21 @@ export default function Documents({ onOpenDocument }) {
               : 'Everything the firm has produced, newest first'}
           </div>
         </div>
+      </div>
+
+      <div className="searchbar">
+        <span className="searchbar-icon" aria-hidden="true">⌕</span>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by reference, client, or kind of letter"
+          aria-label="Search documents"
+        />
+        {query && (
+          <button className="searchbar-clear" onClick={() => setQuery('')} aria-label="Clear search">
+            ×
+          </button>
+        )}
       </div>
 
       <div className="filters">
@@ -76,7 +108,9 @@ export default function Documents({ onOpenDocument }) {
       {!loading && shown.length === 0 && (
         <div className="panel-box">
           <p className="box-empty">
-            {filter ? 'Nothing in this state.' : 'Nothing produced yet.'}
+            {query
+              ? `Nothing matching “${query}”.`
+              : filter ? 'Nothing in this state.' : 'Nothing produced yet.'}
           </p>
         </div>
       )}

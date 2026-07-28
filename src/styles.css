@@ -1159,7 +1159,12 @@ textarea { line-height: 1.6; resize: vertical; }
 .sheet-para.tight { margin-bottom: 12px; }
 
 .sheet-close { margin-top: 46px; }
-.sheet-close .sheet-signame { margin-top: 4px; }
+.sheet-hand {
+  font-family: 'Allura', Georgia, serif;
+  font-size: 2.6rem; line-height: 1.15; color: var(--nearblack);
+  margin: 6px 0 2px;
+}
+.sheet-close .sheet-signame { margin-top: 0; }
 .sheet-regards {
   font-family: 'Nunito Sans', sans-serif; font-weight: 700;
   font-size: 0.92rem; color: var(--nearblack); margin-bottom: 14px;
@@ -1490,3 +1495,29 @@ button:disabled { transition: opacity 160ms var(--ease); }
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Search ----
+   A reference is what a firm quotes on the phone, so finding a letter by one
+   should not mean scrolling. */
+.searchbar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; padding: 0 14px; margin-bottom: 14px;
+  transition: border-color 180ms var(--ease), box-shadow 200ms var(--ease);
+}
+.searchbar:focus-within {
+  border-color: var(--bright);
+  box-shadow: 0 0 0 3px rgba(69,146,220,0.12);
+}
+.searchbar-icon { color: var(--faint); font-size: 1.05rem; flex-shrink: 0; }
+.searchbar input {
+  flex: 1 1 0; min-width: 0; border: none; background: transparent;
+  padding: 13px 0; font-size: 0.92rem; border-radius: 0;
+}
+.searchbar input:focus { box-shadow: none; background: transparent; }
+.searchbar-clear {
+  background: none; border: none; color: var(--muted);
+  font-size: 1.2rem; line-height: 1; padding: 2px 4px; flex-shrink: 0;
+  border-radius: 6px; transition: color 160ms var(--ease), background 160ms var(--ease);
+}
+.searchbar-clear:hover { color: var(--ink); background: var(--light); }
