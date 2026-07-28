@@ -19,7 +19,9 @@ const NAV = [
   { key: 'clients', label: 'Clients' },
   { key: 'documents', label: 'Documents' },
   { key: 'templates', label: 'Templates' },
-  { key: 'team', label: 'Team', ownerOnly: true },
+  // Everyone can see who is at the firm. Only the owner can change it, which
+  // is enforced inside the page and again on the server.
+  { key: 'team', label: 'Team' },
 ];
 
 const TITLES = {

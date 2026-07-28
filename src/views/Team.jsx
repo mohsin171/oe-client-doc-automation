@@ -38,9 +38,9 @@ export default function Team() {
           <div>
             <div className="section-title">Team</div>
             <div className="section-hint">
-              People who can sign in. Access is by invitation only, and each person
-              signs in with a one time code sent to their email. Nobody can register
-              themselves.
+              {canManage
+                ? 'Access is by invitation only. Nobody can register themselves.'
+                : 'People at the firm. Only the owner can add or remove someone.'}
             </div>
           </div>
         </div>
@@ -86,7 +86,9 @@ export default function Team() {
       <div className="section">
         <div className="section-head">
           <div className="section-title">People</div>
-          <div className="section-hint">Revoking someone ends their session immediately</div>
+          {canManage && (
+            <div className="section-hint">Revoking someone ends their session immediately</div>
+          )}
         </div>
 
         <div className="rows">
