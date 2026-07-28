@@ -235,10 +235,6 @@ export default function DocumentForm({
                 <div className="sig-date">{today}</div>
               </div>
             </div>
-
-            <p className="prov">
-              The client completes this part. What you type here is not stored.
-            </p>
           </section>
         </div>
       )}
