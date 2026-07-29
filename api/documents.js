@@ -7,6 +7,7 @@
 import { sql } from '../lib/db.js';
 import {
   getMatter, getMatterFields, getTemplate, getPrecedents, assessCompleteness,
+  getMatterTimeline,
   listDocuments, listAllDocuments, createDocument, addDocumentVersion, getCurrentVersion,
   canSeeMatter, recordSend,
   setDocumentStatus, replaceFlags, getFlags, resolveFlag, recordApproval,
@@ -16,6 +17,7 @@ import { generate, runDeterministicRules, isVerifiable } from '../lib/engine.js'
 import { canonicalKey, isSystemField, SYSTEM_FIELDS, fieldMeta } from '../lib/fields.js';
 import { fixTargetFor } from '../lib/letter.js';
 import { queryForMatter, describeGrounding } from '../lib/relevance.js';
+import { historyForDrafting } from '../lib/history.js';
 import { prepareForDrafting } from '../lib/redact.js';
 import { renderLetterPdf } from '../lib/pdf.js';
 import { sendDocumentEmail, emailConfigured } from '../lib/email.js';
@@ -348,10 +350,16 @@ export default async function handler(req, res) {
         WHERE matter_id = ${matterId} AND transcript IS NOT NULL
         ORDER BY created_at DESC LIMIT 1`)[0];
 
+      // What the file records having happened. A letter written later in a matter is
+      // largely an account of this, and it was previously unreachable: the fee earner
+      // had to type out what the system already held.
+      const timeline = await getMatterTimeline(ctx.firm_id, matterId);
+
       const result = await generate({
         definition,
         values,
         narrative: capture?.transcript || '',
+        history: historyForDrafting(timeline),
         precedents,
         firmName: ctx.firm_name,
         docType: template.doc_type,

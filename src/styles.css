@@ -1609,3 +1609,26 @@ button:disabled { transition: opacity 160ms var(--ease); }
 .notice.instruction { margin-bottom: 22px; }
 .notice.instruction strong { color: var(--nearblack); }
 .notice.instruction .prov { display: block; margin-top: 6px; }
+
+/* ---- The letters that can be written on this file ----
+   Each says what it needs. One answer for the whole matter meant every letter was
+   blocked whenever any letter was short of anything, which is wrong the moment a firm
+   has more than one kind. */
+.letters { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.letter-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 16px; border-radius: 13px;
+  background: var(--canvas); border: 1px solid var(--line);
+  transition: border-color 180ms var(--ease), box-shadow 200ms var(--ease);
+}
+.letter-option.ready { background: var(--card); border-color: var(--line-soft); box-shadow: var(--shadow); }
+.letter-option.ready:hover { border-color: #C9DBEE; box-shadow: var(--shadow-lift); }
+.letter-option-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.letter-option-main strong { font-size: 0.95rem; }
+.letter-option-side { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+/* These read as phrases rather than labels, so the badge's title casing turns
+   "uses the file" into "Uses The File". */
+.letter-option-side .badge { text-transform: none; letter-spacing: 0; }
+.letter-recheck {
+  font-size: 0.78rem; color: var(--amber); font-weight: 600; margin-top: 2px;
+}

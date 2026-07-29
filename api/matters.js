@@ -13,6 +13,7 @@ import { sql } from '../lib/db.js';
 import { requireContext, actorFor, ok, bad, readBody } from '../lib/context.js';
 import { buildFormSchema, splitSchema, fieldMeta, canonicalKey, isSystemField } from '../lib/fields.js';
 import { extractFromNarrative } from '../lib/extract.js';
+import { whatIsNeeded, captureIntro } from '../lib/needs.js';
 
 // A file needs some things no document ever prints. An email address is how
 // anything reaches the client at all, so it cannot depend on whether a template
@@ -159,8 +160,32 @@ export default async function handler(req, res) {
         .filter((k) => !shown.has(k))
         .map((k) => fieldMeta(k));
 
+      // Readiness per letter, not per matter.
+      //
+      // It used to be one answer for the whole file, pooled from every template's
+      // requirements, so every letter was blocked whenever any letter was short of
+      // anything. That is right while a firm has one letter and wrong the moment it
+      // has two: a closing letter can be ready on a file where an engagement letter
+      // never will be again.
+      const perTemplate = templates.map((t) => {
+        const needs = whatIsNeeded({ template: t, fields, history: timeline, matter });
+        return {
+          ...t,
+          needs: {
+            have: needs.have.length,
+            need: needs.need,
+            recheck: needs.recheck,
+            note: needs.note,
+            canDrawOnHistory: needs.canDrawOnHistory,
+            ready: needs.need.length === 0,
+          },
+          intro: captureIntro(needs),
+        };
+      });
+
       return ok(res, {
-        matter, fields, required, completeness, templates, timeline, users, gaps, suggestions,
+        matter, fields, required, completeness, timeline, users, gaps, suggestions,
+        templates: perTemplate,
         // The notes the facts were read from, so correcting a fee does not mean
         // editing the answer while leaving the working wrong.
         narrative: capture?.transcript || '',

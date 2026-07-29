@@ -316,19 +316,45 @@ export default function Matter({ matterId, onBack, onOpenDocument, onEdit, onRem
           </div>
         )}
 
-        <div className="btn-row" style={{ marginTop: 16 }}>
-          {templates.map((t) => (
-            <button
-              key={t.id}
-              className="btn"
-              disabled={!completeness.canGenerate || busy === 'generate'}
-              onClick={() => generate(t.id)}
-            >
-              {busy === 'generate' ? 'Generating…' : `Generate ${t.name}`}
-            </button>
-          ))}
+        {/* One row per letter, each saying what it needs. A closing letter can be ready
+            on a file where an engagement letter is not, and one answer for the whole
+            matter hid that. */}
+        <div className="letters">
+          {templates.map((t) => {
+            const n = t.needs || {};
+            const ready = n.ready !== false;
+            return (
+              <div className={ready ? 'letter-option ready' : 'letter-option'} key={t.id}>
+                <div className="letter-option-main">
+                  <strong>{t.name}</strong>
+                  <span className="row-sub">
+                    {ready
+                      ? (t.intro?.hint || 'Everything needed is on file.')
+                      : `Needs ${n.need.map((f) => f.label.toLowerCase()).join(', ')}`}
+                  </span>
+                  {ready && n.recheck?.length > 0 && (
+                    <span className="letter-recheck">
+                      Worth rechecking:{' '}
+                      {n.recheck.map((r) => `${r.label.toLowerCase()} ${r.value}`).join(', ')}
+                    </span>
+                  )}
+                </div>
+                <div className="letter-option-side">
+                  {n.note === 'essential' && <span className="badge in_review">needs a note</span>}
+                  {n.canDrawOnHistory && <span className="badge approved">from the file</span>}
+                  <button
+                    className={ready ? 'btn-primary btn-sm' : 'btn btn-sm'}
+                    disabled={!ready || busy === 'generate'}
+                    onClick={() => generate(t.id)}
+                  >
+                    {busy === 'generate' ? 'Writing…' : 'Write it'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
           {templates.length === 0 && (
-            <p className="muted">No templates yet. Add one on the Templates tab.</p>
+            <p className="muted">No letters yet. Add some on Your letters.</p>
           )}
         </div>
       </div>
