@@ -1638,3 +1638,15 @@ button:disabled { transition: opacity 160ms var(--ease); }
 .grouping-note { margin-bottom: 16px; }
 .grouping-note strong { display: block; margin-bottom: 4px; color: var(--nearblack); }
 .found-kinds { margin-bottom: 22px; }
+
+/* What the notes did not mention, folded away. Sixteen boxes with four values in them is
+   a form asking somebody to fill twelve blanks nobody can fill, and the answer they gave
+   was to type nan into them. */
+.not-mentioned { margin-top: 18px; }
+.not-mentioned summary {
+  cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--steel);
+  padding: 9px 13px; border-radius: 9px; background: var(--light);
+  display: inline-block; transition: background 160ms var(--ease);
+}
+.not-mentioned summary:hover { background: rgba(69,146,220,0.14); }
+.not-mentioned .prov { margin: 12px 0 14px; max-width: 620px; }

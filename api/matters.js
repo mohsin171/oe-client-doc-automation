@@ -11,7 +11,9 @@ import {
 } from '../lib/store.js';
 import { sql } from '../lib/db.js';
 import { requireContext, actorFor, ok, bad, readBody } from '../lib/context.js';
-import { buildFormSchema, splitSchema, fieldMeta, canonicalKey, isSystemField } from '../lib/fields.js';
+import {
+  buildFormSchema, splitSchema, fieldMeta, canonicalKey, isSystemField, isNotAValue,
+} from '../lib/fields.js';
 import { extractFromNarrative } from '../lib/extract.js';
 import { whatIsNeeded, captureIntro } from '../lib/needs.js';
 
@@ -80,7 +82,7 @@ export default async function handler(req, res) {
           SELECT id, legal_name, email, phone, address, company_no
           FROM clients WHERE firm_id = ${ctx.firm_id}
           ORDER BY legal_name LIMIT 200`;
-        const schema = buildFormSchema(templates, CORE_FIELDS);
+        const schema = buildFormSchema(templates, CORE_FIELDS, { opening: true });
         const split = splitSchema(schema);
         return ok(res, {
           schema,
@@ -473,7 +475,9 @@ export default async function handler(req, res) {
         const key = canonicalKey(rawKey);
         if (isSystemField(key)) continue;
         const v = String(raw ?? '').trim();
-        if (!v) continue;
+        // "nan" typed to escape a form is not a fact. Treated as absence, so the field
+        // stays a gap and whichever letter needs it asks properly.
+        if (isNotAValue(v)) continue;
         await upsertMatterField(matterId, {
           key,
           value: v,

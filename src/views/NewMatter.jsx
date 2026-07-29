@@ -306,24 +306,41 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
           <>
             {extractable.length > 0 ? (
               <>
+                {/* What was found, and nothing else.
+                    Sixteen boxes with four values in them is a form asking a fee earner
+                    to fill twelve blanks nobody can fill, and the answer they gave was to
+                    type "nan" into them, which is what a form deserves for asking a
+                    question that has no answer. Anything not in the notes is not missing:
+                    it is simply not known yet, and the letter that needs it will ask when
+                    it is written. */}
                 <div className="readout">
-                  <strong>{filledExtract} of {extractable.length}</strong> found in your notes
+                  <strong>{filledExtract} found in your notes</strong>
+                  {extractable.length > filledExtract
+                    && `, ${extractable.length - filledExtract} not mentioned`}
                 </div>
-                <div className="field-grid">{extractable.map((f) => field(f, { hints: false }))}</div>
 
-                {readResult?.unstated?.length > 0 && (
-                  <div className="unstated">
-                    <div className="box-title">Not mentioned</div>
-                    {readResult.unstated.map((u) => (
-                      <div className="kv" key={u.key}>
-                        <div>
-                          <div className="kv-key">{u.label || u.key}</div>
-                          <div className="prov">{u.why}</div>
-                        </div>
-                      </div>
-                    ))}
-                    <p className="prov">Fill these above, or leave them for later.</p>
-                  </div>
+                <div className="field-grid">
+                  {extractable
+                    .filter((f) => String(values[f.key] ?? '').trim())
+                    .map((f) => field(f, { hints: false }))}
+                </div>
+
+                {extractable.some((f) => !String(values[f.key] ?? '').trim()) && (
+                  <details className="not-mentioned">
+                    <summary>
+                      {extractable.filter((f) => !String(values[f.key] ?? '').trim()).length}{' '}
+                      things the notes did not mention
+                    </summary>
+                    <p className="prov">
+                      None of these is missing. They are not known yet, and whichever letter
+                      needs one will ask for it then. Add any you happen to know.
+                    </p>
+                    <div className="field-grid">
+                      {extractable
+                        .filter((f) => !String(values[f.key] ?? '').trim())
+                        .map((f) => field(f, { hints: false }))}
+                    </div>
+                  </details>
                 )}
               </>
             ) : (
