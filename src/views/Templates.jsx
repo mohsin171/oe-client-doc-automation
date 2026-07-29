@@ -237,10 +237,52 @@ export default function Templates() {
       {result && (
         <div className="section">
           <div className="section-head">
-            <div className="section-title">{result.definition.name}</div>
-            <div className="section-hint">Check the split before saving</div>
+            <div className="section-title">
+              {result.structures?.length > 1
+                ? `${result.structures.length} kinds of letter`
+                : result.definition.name}
+            </div>
+            <div className="section-hint">
+              {result.structures?.length > 1
+                ? 'Each counted on its own group'
+                : 'Check the split before saving'}
+            </div>
           </div>
 
+          {/* What one upload turned out to contain. A firm hands over a folder, not a
+              sorted set, so an upload becomes as many letters as it holds. Saying so
+              before saving matters: seven templates appearing without explanation is
+              alarming, and the count is also the check that the grouping worked. */}
+          {result.structures?.length > 1 && (
+            <>
+              <div className="notice info grouping-note">
+                <strong>{result.grouping?.summary}</strong>
+                <span className="prov">
+                  Saving adds {result.structures.length} letters, each grounded on its own
+                  group.
+                  {result.grouping?.ungrouped > 0
+                    && ` ${result.grouping.ungrouped} did not match any group and are not used.`}
+                </span>
+              </div>
+
+              <div className="rows found-kinds">
+                {result.structures.map((st, i) => (
+                  <div className="row" key={i}>
+                    <div className="row-main">
+                      <strong>{st.definition.name}</strong>
+                      <span className="row-sub">
+                        {st.size} letters · {st.summary.fixed} standard ·{' '}
+                        {st.summary.field} merged · {st.summary.bespoke} written each time
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {/* The four numbers describe one structure. With several found they would
+              describe only the first, so the list above stands in for them. */}
+          {!(result.structures?.length > 1) && (
           <div className="stats">
             <div className="stat hero">
               <div className="stat-value">{result.summary.fixed}</div>
@@ -269,6 +311,7 @@ export default function Templates() {
               <div className="stat-note">{result.summary.reviewRules} rules in total</div>
             </div>
           </div>
+          )}
 
           {result.corpus?.recovered > 0 && (
             <div className="notice info">
@@ -283,7 +326,7 @@ export default function Templates() {
           <div className="panel-box" style={{ marginTop: 16 }}>
             <div className="box-title">The split</div>
             <div className="blocks-preview">
-              {result.definition.blocks.map((b) => (
+              {(result.definition.blocks || []).map((b) => (
                 <div key={b.key} className={`block block-${b.kind}`}>
                   <span className="block-kind">
                     {b.kind === 'fixed' && 'Standard · reproduced exactly'}
@@ -295,10 +338,10 @@ export default function Templates() {
               ))}
             </div>
 
-            {result.definition.reviewRules.length > 0 && (
+            {(result.definition.reviewRules || []).length > 0 && (
               <>
                 <div className="box-title" style={{ marginTop: 20 }}>Checks on every future copy</div>
-                {result.definition.reviewRules.map((r) => (
+                {(result.definition.reviewRules || []).map((r) => (
                   <div className="rule" key={r.code}>
                     <span className={`badge ${r.severity}`}>{r.severity}</span>
                     <span>{r.message}</span>

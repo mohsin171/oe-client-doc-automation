@@ -481,9 +481,6 @@ textarea { line-height: 1.6; resize: vertical; }
   border-left: 2px solid var(--bright); color: var(--muted);
   font-size: 0.78rem; font-style: italic; line-height: 1.5;
 }
-.unstated {
-  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--line);
-}
 
 /* ---------------- Document upload ---------------- */
 .dropzone {
@@ -1165,7 +1162,6 @@ textarea { line-height: 1.6; resize: vertical; }
   line-height: 1.85; color: #26303D; text-align: justify;
   hyphens: auto; margin-bottom: 20px; white-space: pre-wrap;
 }
-.sheet-para.tight { margin-bottom: 12px; }
 
 .sheet-close { margin-top: 46px; }
 .sheet-hand {
@@ -1559,13 +1555,6 @@ button:disabled { transition: opacity 160ms var(--ease); }
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 16px; margin-bottom: 14px;
 }
-.edit-profile {
-  margin-bottom: 20px; padding: 16px 18px;
-  background: var(--canvas); border: 1px solid var(--line); border-radius: 14px;
-  animation: stepIn 260ms var(--ease) both;
-}
-.edit-profile .field-grid { margin-bottom: 4px; }
-.edit-profile .prov { margin: 10px 0 12px; }
 
 .record-head {
   display: flex; align-items: baseline; justify-content: space-between;
