@@ -311,9 +311,14 @@ export default async function handler(req, res) {
       });
 
       if (!result.ok) {
-        return bad(res, result.reason === 'too_short'
-          ? 'Write a little more about the call first.'
-          : 'Could not read those notes. Try rephrasing them.', 422);
+        if (result.reason === 'too_short') {
+          return bad(res, 'Write a little more about the call first.', 422);
+        }
+        // Not the notes' fault. Saying so sent somebody rewriting notes that were fine.
+        console.warn('extraction failed:', result.reason, result.got || '');
+        return bad(res, 'The reading did not come back properly. Try again, and if it '
+          + 'happens twice the notes can be saved as they are and the facts filled in by '
+          + 'hand.', 502);
       }
       return ok(res, result);
     }

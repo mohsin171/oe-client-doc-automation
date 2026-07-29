@@ -35,6 +35,7 @@ export default function NewMatter({ matterId, onClose, onCreated }) {
   const [narrative, setNarrative] = useState('');
   const [provenance, setProvenance] = useState({});
   const [readResult, setReadResult] = useState(null);
+  const [readFailed, setReadFailed] = useState(false);
 
   const [reading, setReading] = useState(false);
   const [conflict, setConflict] = useState(null);
