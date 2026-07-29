@@ -13,6 +13,7 @@ import { sql } from '../lib/db.js';
 import { requireContext, actorFor, ok, bad, readBody } from '../lib/context.js';
 import {
   buildFormSchema, splitSchema, fieldMeta, canonicalKey, isSystemField, isNotAValue,
+  belongsToALetter, isFurnitureField,
 } from '../lib/fields.js';
 import { extractFromNarrative } from '../lib/extract.js';
 import { whatIsNeeded, captureIntro } from '../lib/needs.js';
@@ -44,6 +45,9 @@ const SUGGESTED_FIELDS = [
 // always requires explicit confirmation. Dictation mishears figures, and sixty
 // against sixteen in a fee clause ends a client relationship.
 function looksNumeric(key, value) {
+  // A status is not money. "costs status" matched on the word cost and was given a pound
+  // sign and a zero, so the form asked for a position on costs in currency.
+  if (/_(status|basis|type|name|method|terms|note|reason|heading)$/i.test(key)) return false;
   if (/rate|fee|amount|price|cost|hours|total|estimate|cap|percent/i.test(key)) return true;
   return /^[£$€]?\s*[\d,]+(\.\d+)?\s*%?$/.test(String(value).trim());
 }
@@ -58,7 +62,16 @@ async function requiredFor(firmId, matter) {
   for (const t of templates) {
     for (const f of (t.definition?.requiredFields || [])) {
       const k = canonicalKey(f);
-      if (!isSystemField(k)) set.add(k);
+      // Filled at generation, so never asked.
+      if (isSystemField(k)) continue;
+      // A heading is not a fact. Ingestion sometimes declares one as a required field,
+      // and asking a fee earner for "papers heading" is asking them to invent a
+      // document's furniture.
+      if (isFurnitureField(f) || isFurnitureField(k)) continue;
+      // Belongs to a letter written later, and asked for when it is written. A file
+      // opened this morning cannot know the final bill.
+      if (belongsToALetter(k)) continue;
+      set.add(k);
     }
   }
   return [...set];
