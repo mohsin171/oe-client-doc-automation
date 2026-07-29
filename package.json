@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "eslint api lib src && node scripts/check-modules.mjs && node scripts/check-sql.mjs && vite build",
     "preview": "vite preview",
-    "check": "eslint api lib src && node scripts/check-modules.mjs && node scripts/check-sql.mjs && node scripts/check-css.mjs && node scripts/checks/needs.mjs && node scripts/checks/history.mjs && node scripts/checks/lifecycle.mjs"
+    "check": "eslint api lib src && node scripts/check-modules.mjs && node scripts/check-sql.mjs && node scripts/check-css.mjs && node scripts/checks/needs.mjs && node scripts/checks/history.mjs && node scripts/checks/lifecycle.mjs && node scripts/checks/all-types.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
