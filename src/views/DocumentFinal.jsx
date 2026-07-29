@@ -93,6 +93,13 @@ export default function DocumentFinal({
             if (flat.startsWith('our reference:')) return null;
             if (/^\d{1,2}\s+\w+\s+\d{4}$/.test(flat) || /^\d{4}-\d{2}-\d{2}$/.test(flat)) return null;
 
+            // The close is set out below, so a signature block among the body gives
+            // two of them.
+            const senderName = String(sender?.name || '').trim().toLowerCase();
+            if (senderName && flat.length < 90 && flat.includes(senderName)
+              && flat.includes(firmName.toLowerCase())) return null;
+            if (senderName && flat === senderName) return null;
+
             // A short invariant line is one of the firm's own headings, so it is set
             // as one. Nothing is derived from a block key.
             const isHeading = b.kind === 'fixed' && text.length < 60 && !/[.;:,]$/.test(text);

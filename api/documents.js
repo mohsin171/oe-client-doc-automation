@@ -165,6 +165,8 @@ function systemValues({ matter, ctx, values }) {
     firm_name: branding.letterhead || ctx.firm_name || '',
     firm_address: branding.address || '',
     fee_earner_title: ctx.title || '',
+    // Derived only as a fallback. Where the notes said what the letter is about, that
+    // is used instead, because "Re: Family" is the area of work and not the subject.
     matter_subject: subjectFrom(values.scope_summary, matter.matter_type),
   };
 }
