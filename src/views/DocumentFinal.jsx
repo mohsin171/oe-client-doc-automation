@@ -69,7 +69,25 @@ export default function DocumentFinal({
             <p className="sheet-subject">{String(parts.subject.body).trim()}</p>
           )}
 
-          {body.map((b) => {
+          {/* A heading with nothing under it is dropped with the section it introduces.
+              The same rule as the PDF, in lib/letter.js, so the screen and the download
+              cannot disagree about what the letter says. */}
+          {body
+            .filter((b, i, all) => {
+              const isHeading = (x) => x && x.kind === 'fixed'
+                && String(x.body || '').trim().length > 0
+                && String(x.body || '').trim().length < 60
+                && !/[.;:,]$/.test(String(x.body || '').trim());
+              if (isHeading(b)) {
+                for (let j = i + 1; j < all.length; j += 1) {
+                  if (isHeading(all[j])) break;
+                  if (String(all[j].body || '').trim()) return true;
+                }
+                return false;
+              }
+              return String(b.body || '').trim().length > 0;
+            })
+            .map((b) => {
             const text = String(b.body).trim();
             const flat = text.replace(/\s+/g, ' ').toLowerCase();
 
