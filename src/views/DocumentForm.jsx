@@ -144,9 +144,6 @@ export default function DocumentForm({
                           Fix {headingFor({ key: f.fixIn })}
                         </button>
                       )}
-                      {!f.verifiable && (
-                        <button className="btn btn-sm" onClick={() => onResolve(f.id)}>Resolved</button>
-                      )}
                       <button className="btn-ghost" onClick={() => setDismissing(f.id)}>Dismiss</button>
                     </div>
                   )}

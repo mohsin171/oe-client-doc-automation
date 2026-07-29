@@ -1,0 +1,222 @@
+[
+  {
+    "ref": "HF/2026/100",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Mr Gareth Pemberton",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 3400,
+    "date": "2026-03-08",
+    "file": "01-employment-HF-2026-100.txt"
+  },
+  {
+    "ref": "HF/2026/101",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Ms Rosalind Achebe",
+    "fee_earner": "Daniel Okoye",
+    "rate": 265,
+    "estimate": 5830,
+    "date": "2026-07-09",
+    "file": "02-family-HF-2026-101.txt"
+  },
+  {
+    "ref": "HF/2026/102",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Cawthorne Fabrications Limited",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 4800,
+    "date": "2026-05-08",
+    "file": "03-residential-conveyancing-HF-2026-102.txt"
+  },
+  {
+    "ref": "HF/2026/103",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Mrs Lydia Frankland",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 1520,
+    "date": "2026-06-14",
+    "file": "04-employment-HF-2026-103.txt"
+  },
+  {
+    "ref": "HF/2026/104",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr and Mrs D Okonkwo",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 2720,
+    "date": "2026-04-28",
+    "file": "05-probate-and-estate-administration-HF-2026-104.txt"
+  },
+  {
+    "ref": "HF/2026/105",
+    "doc_type": "engagement_letter",
+    "matter_type": "Commercial lease",
+    "client": "Dr Alasdair Menzies",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 3420,
+    "date": "2026-06-06",
+    "file": "06-commercial-lease-HF-2026-105.txt"
+  },
+  {
+    "ref": "HF/2026/106",
+    "doc_type": "engagement_letter",
+    "matter_type": "Commercial lease",
+    "client": "Brindley Wharf Estates Limited",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 3200,
+    "date": "2026-06-24",
+    "file": "07-commercial-lease-HF-2026-106.txt"
+  },
+  {
+    "ref": "HF/2026/107",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Mr Nathaniel Boakye",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 5760,
+    "date": "2026-03-08",
+    "file": "08-family-HF-2026-107.txt"
+  },
+  {
+    "ref": "HF/2026/108",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Mrs Wendy Threlfall",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 2150,
+    "date": "2026-06-23",
+    "file": "09-family-HF-2026-108.txt"
+  },
+  {
+    "ref": "HF/2026/109",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Miss Orla Devaney",
+    "fee_earner": "Daniel Okoye",
+    "rate": 265,
+    "estimate": 5830,
+    "date": "2026-03-15",
+    "file": "10-residential-conveyancing-HF-2026-109.txt"
+  },
+  {
+    "ref": "HF/2026/110",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Sedgwick Precision Limited",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 5100,
+    "date": "2026-07-05",
+    "file": "11-employment-HF-2026-110.txt"
+  },
+  {
+    "ref": "HF/2026/111",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Ms Farrah Kazemi",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 1900,
+    "date": "2026-05-14",
+    "file": "12-family-HF-2026-111.txt"
+  },
+  {
+    "ref": "HF/2026/112",
+    "doc_type": "engagement_letter",
+    "matter_type": "Family",
+    "client": "Mr Vincent Ollerenshaw",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 4730,
+    "date": "2026-02-25",
+    "file": "13-family-HF-2026-112.txt"
+  },
+  {
+    "ref": "HF/2026/113",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mrs Bridget Hanrahan",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 1900,
+    "date": "2026-05-22",
+    "file": "14-probate-and-estate-administration-HF-2026-113.txt"
+  },
+  {
+    "ref": "HF/2026/114",
+    "doc_type": "engagement_letter",
+    "matter_type": "Commercial lease",
+    "client": "Mr Julian Ashcombe",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 2580,
+    "date": "2026-05-06",
+    "file": "15-commercial-lease-HF-2026-114.txt"
+  },
+  {
+    "ref": "HF/2026/115",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Halewood & Pike Limited",
+    "fee_earner": "Tom Harrow",
+    "rate": 340,
+    "estimate": 2720,
+    "date": "2026-01-28",
+    "file": "16-employment-HF-2026-115.txt"
+  },
+  {
+    "ref": "HF/2026/116",
+    "doc_type": "engagement_letter",
+    "matter_type": "Employment",
+    "client": "Ms Constance Mbeki",
+    "fee_earner": "Sarah Fenn",
+    "rate": 320,
+    "estimate": 7040,
+    "date": "2026-03-01",
+    "file": "17-employment-HF-2026-116.txt"
+  },
+  {
+    "ref": "HF/2026/117",
+    "doc_type": "engagement_letter",
+    "matter_type": "Probate and estate administration",
+    "client": "Mr Duncan Rylance",
+    "fee_earner": "Priya Raval",
+    "rate": 215,
+    "estimate": 3225,
+    "date": "2026-07-09",
+    "file": "18-probate-and-estate-administration-HF-2026-117.txt"
+  },
+  {
+    "ref": "HF/2026/118",
+    "doc_type": "engagement_letter",
+    "matter_type": "Residential conveyancing",
+    "client": "Mr Gareth Pemberton",
+    "fee_earner": "Aisha Bello",
+    "rate": 190,
+    "estimate": 4940,
+    "date": "2026-01-18",
+    "file": "19-residential-conveyancing-HF-2026-118.txt"
+  },
+  {
+    "ref": "HF/2026/119",
+    "doc_type": "engagement_letter",
+    "matter_type": "Commercial lease",
+    "client": "Ms Rosalind Achebe",
+    "fee_earner": "Daniel Okoye",
+    "rate": 265,
+    "estimate": 6890,
+    "date": "2026-04-05",
+    "file": "20-commercial-lease-HF-2026-119.txt"
+  }
+]

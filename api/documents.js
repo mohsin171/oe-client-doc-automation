@@ -546,8 +546,14 @@ export default async function handler(req, res) {
         }), 409);
       }
 
+      // The notice raised when a letter was reopened is asking for exactly this. It has
+      // happened, so the notice goes rather than waiting to be dismissed by hand.
+      await sql`
+        DELETE FROM flags
+        WHERE document_version_id = ${version.id} AND code = 'reopened_after_signoff'`;
+
       const dismissed = flags
-        .filter((f) => f.status === 'dismissed')
+        .filter((f) => f.status === 'dismissed' && f.code !== 'reopened_after_signoff')
         .map((f) => ({ code: f.code, message: f.message, reason: f.dismissed_reason }));
 
       await recordApproval(version.id, ctx.user_id, dismissed);

@@ -915,7 +915,10 @@ textarea { line-height: 1.6; resize: vertical; }
   font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.07em;
   font-weight: 800; color: var(--steel); background: var(--light);
   padding: 3px 8px; border-radius: 999px; white-space: nowrap;
-}/* A section carrying an open flag says so where the passage is {
+}
+
+/* A section carrying an open flag says so where the passage is. */
+.df-section.flagged {
   border-left: 2px solid var(--red);
   padding-left: 18px; margin-left: -20px;
   background: linear-gradient(90deg, rgba(192,71,63,0.04), transparent 40%);
@@ -935,7 +938,13 @@ textarea { line-height: 1.6; resize: vertical; }
 .check-blocking { border-left-color: var(--red); }
 .check-advisory { border-left-color: var(--amber); }
 .check-main { min-width: 0; }
-.check-side { display: flex; gap: 8px; flex-shrink: 0; align-items: stretch; }
+.check-side {
+  /* One line, always. Wrapping put Dismiss under the other two and moved the whole
+     group as the message reflowed, so the buttons appeared to shift about between
+     one check and the next. */
+  display: flex; gap: 8px; flex-shrink: 0; align-items: stretch;
+  flex-wrap: nowrap; white-space: nowrap;
+}
 
 /* A bordered button and a borderless one do not line up by default: the ghost
    has no border to account for and its own padding, so it sits high and short
