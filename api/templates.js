@@ -2,6 +2,7 @@
 import { sql } from '../lib/db.js';
 import { listTemplates, getTemplate, logEvent } from '../lib/store.js';
 import { ingestTemplate, ingestCorpus, summarise } from '../lib/ingest.js';
+import { groupByKind, describeGrouping } from '../lib/cluster.js';
 import { requireContext, canManageTemplates, ok, bad, readBody } from '../lib/context.js';
 
 export default async function handler(req, res) {
@@ -64,23 +65,53 @@ export default async function handler(req, res) {
 
       if (documents.length === 0) return bad(res, 'No documents supplied');
 
-      const result = await ingestCorpus({
-        documents,
-        firmName: ctx.firm_name,
-        hint: body.hint,
-      });
+      // Sort the pile into kinds before counting anything.
+      //
+      // A firm hands over its correspondence folder: engagement letters, status updates,
+      // chases, completions, closing letters, unsorted, because why would they sort it.
+      // The counting that finds a firm's standard clauses compares like with like, and
+      // given a hundred and forty letters of seven kinds it found four standard clauses
+      // and produced one useless template. Telling the firm to upload one kind at a time
+      // is not an answer, it is asking them to do the work.
+      const grouped = groupByKind(documents);
 
-      if (!result.ok) {
-        const msg = result.reason === 'too_short'
-          ? 'Those files look too short to be full documents.'
-          : 'Could not read a structure out of those documents. Plain text works best.';
-        return bad(res, msg, 422);
+      if (grouped.groups.length === 0) {
+        return bad(res, 'Those files look too short, or too few of one kind, to count from. '
+          + 'Three or more letters of the same kind are needed.', 422);
+      }
+
+      // One structure per kind. Each is analysed on its own group, which is what makes
+      // the counting mean anything.
+      const structures = [];
+      for (const group of grouped.groups) {
+        const result = await ingestCorpus({
+          documents: group.documents,
+          firmName: ctx.firm_name,
+          hint: body.hint,
+        });
+        if (!result.ok) continue;
+        structures.push({
+          definition: result.definition,
+          summary: summarise(result.definition),
+          corpus: result.corpus,
+          documents: group.documents,
+          size: group.size,
+        });
+      }
+
+      if (structures.length === 0) {
+        return bad(res, 'Could not read a structure out of those documents. Plain text '
+          + 'works best.', 422);
       }
 
       return ok(res, {
-        definition: result.definition,
-        summary: summarise(result.definition),
-        corpus: result.corpus,
+        // The first is returned on its own as well, so anything expecting a single
+        // structure keeps working rather than breaking on a shape it has not seen.
+        definition: structures[0].definition,
+        summary: structures[0].summary,
+        corpus: structures[0].corpus,
+        structures,
+        grouping: describeGrouping(grouped),
       });
     }
 

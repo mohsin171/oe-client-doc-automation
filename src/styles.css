@@ -1632,3 +1632,9 @@ button:disabled { transition: opacity 160ms var(--ease); }
 .letter-recheck {
   font-size: 0.78rem; color: var(--amber); font-weight: 600; margin-top: 2px;
 }
+
+/* What one upload turned out to contain. A firm hands over a folder, not a sorted set,
+   so an upload can become several letters. */
+.grouping-note { margin-bottom: 16px; }
+.grouping-note strong { display: block; margin-bottom: 4px; color: var(--nearblack); }
+.found-kinds { margin-bottom: 22px; }

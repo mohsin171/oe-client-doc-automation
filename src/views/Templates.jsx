@@ -121,11 +121,21 @@ export default function Templates() {
   async function save() {
     setBusy('save');
     try {
-      await api.saveTemplate({
-        definition: result.definition,
-        name: result.definition.name,
-        documents: docs,
-      });
+      // One structure per kind of letter found. Each keeps its own group of letters,
+      // because drafting a status update should be grounded on status updates and not on
+      // whatever else happened to be in the same upload.
+      const structures = result.structures?.length
+        ? result.structures
+        : [{ definition: result.definition, documents: docs }];
+
+      for (const s of structures) {
+        await api.saveTemplate({
+          definition: s.definition,
+          name: s.definition.name,
+          documents: s.documents || docs,
+        });
+      }
+
       setResult(null); setDocs([]); setHint('');
       await load();
     } catch (e) { setError(e.message); }
