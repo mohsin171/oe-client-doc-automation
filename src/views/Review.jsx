@@ -34,7 +34,7 @@ export default function Review({ documentId, onBack }) {
 
   const {
     document: doc, version, flags = [], approvals = [], me, firm, salutation,
-    groundedOn = [],
+    groundedOn = [], standingInstructions = '',
   } = state;
 
   // Signed off is a different screen, not the same screen with its controls
@@ -93,6 +93,7 @@ export default function Review({ documentId, onBack }) {
         approvals={approvals}
         me={me}
         groundedOn={groundedOn}
+        standingInstructions={standingInstructions}
         busy={busy}
         editing={editing}
         editText={editText}

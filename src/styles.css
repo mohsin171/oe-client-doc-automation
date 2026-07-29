@@ -1595,3 +1595,8 @@ button:disabled { transition: opacity 160ms var(--ease); }
   margin: 26px 0 10px;
 }
 .sheet-heading:first-of-type { margin-top: 0; }
+
+/* An instruction the client gave, put where a reviewer will see it. */
+.notice.instruction { margin-bottom: 22px; }
+.notice.instruction strong { color: var(--nearblack); }
+.notice.instruction .prov { display: block; margin-top: 6px; }

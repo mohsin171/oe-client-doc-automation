@@ -13,6 +13,7 @@ import { layoutLetter, isFurniture, headingFor } from '../../lib/letter.js';
 
 export default function DocumentForm({
   doc, version, firm, salutation, flags, approvals, me, groundedOn = [],
+  standingInstructions = '',
   busy, editing, editText, setEditing, setEditText,
   onEditSave, onResolve, onDismiss, dismissing, setDismissing, reason, setReason,
   onApprove, onBack, onDelete,
@@ -157,6 +158,16 @@ export default function DocumentForm({
 
           {parts.subject && (
             <p className="df-subject">{String(parts.subject.body).trim()}</p>
+          )}
+
+          {standingInstructions && (
+            <div className="notice info instruction">
+              <strong>The client asked:</strong> {standingInstructions}
+              <span className="prov">
+                Check the letter honours this. It is the one thing a client will notice
+                being ignored.
+              </span>
+            </div>
           )}
 
           {groundedOn.length > 0 && (

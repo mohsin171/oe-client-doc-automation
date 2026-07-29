@@ -264,6 +264,11 @@ export default async function handler(req, res) {
 
       return ok(res, {
         document, version, flags, approvals, sends, groundedOn,
+        // An instruction the client gave about how the firm should act, put in front of
+        // the reviewer rather than checked by a machine. A deterministic check cannot
+        // tell a paraphrase from an omission, and one that fires on a correct letter
+        // teaches a reader to ignore it. A person compares the two in two seconds.
+        standingInstructions: (version?.merged_values || {}).standing_instructions || '',
         sender: assigned[0] || { name: ctx.name, email: ctx.email },
         canSend: emailConfigured(),
         firm: {
