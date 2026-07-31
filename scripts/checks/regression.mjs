@@ -193,6 +193,27 @@ for (const [type, dir] of TYPES) {
   if (!matches) fail('all', 'a recipient block with different punctuation would print twice');
 }
 
+// 15. A fixed-fee matter assembles rather than blocking on an hourly rate it will never
+// have, and the letter that results is stopped for stating no fee at all.
+{
+  const def = { blocks: [
+    { key: 'h', kind: 'fixed', body: 'How we charge' },
+    { key: 'c', kind: 'field', body: 'Our charges are at {hourly_rate} pounds per hour. We will not exceed any estimate.' },
+  ], requiredFields: [] };
+  const fixed = { fixed_fee: '1450', vat_amount: '290' };
+  const a = assembleFixed(def, fixed, new Set(SYSTEM_FIELDS));
+  if (a.unresolved.length) fail('all', 'a fixed-fee matter blocked on an hourly rate');
+  const flags = runDeterministicRules(def, a.blocks, fixed);
+  if (!flags.some((f) => f.code === 'fee_not_stated')) {
+    fail('all', 'a letter stating no fee on a matter with an agreed fee was not caught');
+  }
+  const hourly = { hourly_rate: '265' };
+  const b = assembleFixed(def, hourly, new Set(SYSTEM_FIELDS));
+  if (runDeterministicRules(def, b.blocks, hourly).some((f) => f.code === 'fee_not_stated')) {
+    fail('all', 'a letter that does state its fee was flagged anyway');
+  }
+}
+
 // 11. A placeholder never becomes a fact, whoever typed it.
 for (const v of ['nan', 'NaN', 'n/a', 'unknown', '-', 'TBC', 'not mentioned', '']) {
   if (!isNotAValue(v)) fail('all', 'a placeholder would be stored as a fact', JSON.stringify(v));

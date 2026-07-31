@@ -368,8 +368,34 @@ export default async function handler(req, res) {
         optional: new Set(SYSTEM_FIELDS),
       });
 
+      if (!result.ok && result.reason === 'nothing_drafted') {
+        // Not the fee earner's fault and not fixable by them supplying anything, so it
+        // says what happened and asks them to try again rather than sending them looking
+        // for a gap that is not there.
+        return bad(res, `${result.detail} Try again.`, 502);
+      }
+
       if (!result.ok) {
-        return bad(res, JSON.stringify({ reason: 'incomplete', unresolved: result.unresolved }), 409);
+        // This reached the screen as {"reason":"incomplete"}, which is a machine talking
+        // to itself in front of a fee earner. It should name what is missing, because
+        // that is the only thing they can do something about.
+        const missing = [...new Set((result.unresolved || []).map((u) => canonicalKey(u.field)))]
+          .filter((k) => !isSystemField(k));
+
+        if (missing.length === 0) {
+          return bad(res, 'The letter could not be assembled. Nothing is missing from the '
+            + 'record, so this is a fault at our end rather than yours.', 500);
+        }
+
+        const labels = missing.map((k) => fieldMeta(k).label.toLowerCase());
+        const list = labels.length === 1
+          ? labels[0]
+          : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+
+        return bad(res,
+          `This letter needs ${list} before it can be written. `
+          + `Add ${labels.length === 1 ? 'it' : 'them'} on the client file and try again.`,
+          409, { missing });
       }
 
       let documentId = body.documentId ? Number(body.documentId) : null;
