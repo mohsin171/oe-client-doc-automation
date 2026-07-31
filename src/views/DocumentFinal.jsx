@@ -102,10 +102,17 @@ export default function DocumentFinal({
             if (isLetterheadLine) return null;
 
             // The recipient block sometimes carries the name and the address together.
-            const clientName = String(doc.client_name || '').trim().toLowerCase();
-            const clientAddr = String(doc.client_address || '').replace(/\s+/g, ' ').trim().toLowerCase();
-            if (flat.length < 160 && clientName.length > 3 && flat.includes(clientName)
-              && (!clientAddr || flat.includes(clientAddr) || flat === clientName)) return null;
+            // Compared without punctuation: the block runs across three lines with no
+            // commas while the record holds one, so a plain comparison missed it and the
+            // recipient printed twice.
+            const flatten = (x) => String(x || '').replace(/[\s,.]+/g, ' ').trim().toLowerCase();
+            const clientName = flatten(doc.client_name);
+            const clientAddr = flatten(doc.client_address);
+            const flatNoPunct = flatten(text);
+            if (flatNoPunct.length < 160 && clientName.length > 3
+              && flatNoPunct.includes(clientName)
+              && (!clientAddr || flatNoPunct.includes(clientAddr)
+                || flatNoPunct === clientName)) return null;
 
             if (branding.address && flat === String(branding.address).trim().toLowerCase()) return null;
             if (flat.startsWith('our reference:')) return null;

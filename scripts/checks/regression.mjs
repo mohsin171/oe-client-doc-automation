@@ -165,6 +165,34 @@ for (const [type, dir] of TYPES) {
   if (!pdf || pdf.length < 2000) fail(type, 'the letter did not render');
 }
 
+// 13. A letter with nothing in it is refused rather than quietly shortened.
+{
+  const { generate } = await import('../../lib/engine.js');
+  const definition = { blocks: [
+    { key: 'std', kind: 'fixed', body: 'We are committed to providing a high standard of service and will reply to any complaint in writing.' },
+    { key: 'scope', kind: 'bespoke', prompt: 'What the firm will do.' },
+  ], requiredFields: [] };
+  // No API key here, so drafting returns the blocks untouched and the bespoke stays
+  // empty, which is exactly the failure this has to catch.
+  const r = await generate({ definition, values: VALUES, precedents: [], firmName: 'X',
+    docType: 'engagement_letter', optional: new Set(SYSTEM_FIELDS) }).catch((e) => ({ ok: false, reason: String(e.message).slice(0, 40) }));
+  if (r.ok) fail('all', 'a letter with no drafted sections was produced anyway');
+  else if (r.reason !== 'nothing_drafted' && !/api|key|ANTHROPIC/i.test(r.reason)) {
+    fail('all', 'a letter with no drafted sections failed for the wrong reason', r.reason);
+  }
+}
+
+// 14. The recipient block is not printed twice when punctuation differs.
+{
+  const { dropOrphanedHeadings } = await import('../../lib/letter.js');
+  const doc = { client_name: 'Mr and Mrs D Okonkwo', client_address: '17 Grange Croft, Leeds LS17 7EW' };
+  const flatten = (x) => String(x || '').replace(/[\s,.]+/g, ' ').trim().toLowerCase();
+  const block = 'Mr and Mrs D Okonkwo\n17 Grange Croft\nLeeds LS17 7EW';
+  const matches = flatten(block).includes(flatten(doc.client_name))
+    && flatten(block).includes(flatten(doc.client_address));
+  if (!matches) fail('all', 'a recipient block with different punctuation would print twice');
+}
+
 // 11. A placeholder never becomes a fact, whoever typed it.
 for (const v of ['nan', 'NaN', 'n/a', 'unknown', '-', 'TBC', 'not mentioned', '']) {
   if (!isNotAValue(v)) fail('all', 'a placeholder would be stored as a fact', JSON.stringify(v));
