@@ -1639,3 +1639,13 @@ button:disabled { transition: opacity 160ms var(--ease); }
 }
 .not-mentioned summary:hover { background: rgba(69,146,220,0.14); }
 .not-mentioned .prov { margin: 12px 0 14px; max-width: 620px; }
+
+/* Open sign-in is on. A demonstration that looks like a live system is a demonstration
+   somebody eventually mistakes for one, and the consequence of that mistake is a real
+   firm's correspondence sitting somewhere anyone can reach. */
+.demo-bar {
+  background: var(--amber-bg); color: var(--amber);
+  border-bottom: 1px solid #E8D5A8;
+  padding: 9px 28px; font-size: 0.8rem; font-weight: 600;
+  text-align: center;
+}

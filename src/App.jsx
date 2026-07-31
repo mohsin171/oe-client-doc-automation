@@ -232,6 +232,13 @@ export default function App() {
       </aside>
 
       <div className="workspace">
+        {session.openSignIn && (
+          <div className="demo-bar">
+            Demonstration. Anyone with this link can sign in with their own address, so
+            nothing real belongs in here.
+          </div>
+        )}
+
         <header className="topnav">
           <div className="crumbs">
             {(matterId || documentId) ? (

@@ -20,6 +20,26 @@ import { logEvent } from '../lib/store.js';
 // wired up. Never set this once a real firm is on the system.
 const DEV_ECHO = process.env.AUTH_DEV_ECHO === 'true';
 
+// Open sign-in, for a demonstration only.
+//
+// Normally this is invite only: an address that nobody has invited gets a polite reply
+// and no code. That is right for a firm and wrong for a demo, where a solicitor should be
+// able to put in their own address and be looking at it a minute later without anyone
+// provisioning them.
+//
+// So when DEMO_OPEN_SIGNIN is exactly 'true', an unknown address is enrolled in the demo
+// firm and sent a code like anybody else. The code still goes to that address and nowhere
+// else, so a person still has to own the mailbox they claim.
+//
+// It is off unless switched on, deliberately. The day a real firm's correspondence is in
+// this database, open sign-in means anyone who guesses the URL can read their clients'
+// letters, and a setting that defaults to open is a setting somebody forgets to close.
+const OPEN_SIGNIN = process.env.DEMO_OPEN_SIGNIN === 'true';
+
+// What a visitor gets. Enough to use everything a fee earner does, and not enough to
+// invite others, change roles or remove anybody.
+const DEMO_ROLE = 'admin';
+
 export default async function handler(req, res) {
   try {
     // ---------------- Who am I ----------------
@@ -35,6 +55,9 @@ export default async function handler(req, res) {
       }
       return ok(res, {
         signedIn: true,
+        // Said out loud in the app, because a demonstration that looks like a live
+        // system is a demonstration somebody mistakes for one.
+        openSignIn: OPEN_SIGNIN,
         user: {
           id: ctx.user_id, name: ctx.name, email: ctx.email, role: ctx.role,
         },
@@ -66,29 +89,51 @@ export default async function handler(req, res) {
       // Invite only. The response is deliberately identical whether or not the
       // address is on the system, so this endpoint cannot be used to discover
       // who works at the firm.
-      if (!user) {
+      let account = user;
+
+      if (!account && OPEN_SIGNIN) {
+        // A demonstration. Enrol the address in the demo firm rather than turning it
+        // away, and send the code to that address as usual: whoever signs in still has
+        // to own the mailbox.
+        const firm = (await sql`SELECT id, name FROM firms ORDER BY id LIMIT 1`)[0];
+        if (firm) {
+          const name = email.split('@')[0].replace(/[._-]+/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+          const created = await sql`
+            INSERT INTO users (firm_id, email, name, role, active)
+            VALUES (${firm.id}, ${email}, ${name}, ${DEMO_ROLE}, TRUE)
+            ON CONFLICT (firm_id, email) DO UPDATE SET active = TRUE
+            RETURNING id, name, email`;
+          account = { ...created[0], firm_name: firm.name };
+          console.log(`[auth] demo sign-in enrolled ${email}`);
+        }
+      }
+
+      if (!account) {
         return ok(res, { sent: true, expiresInMinutes: 10 });
       }
 
-      const rate = await checkRateLimit(user.id);
+      const user_ = account;
+
+      const rate = await checkRateLimit(user_.id);
       if (!rate.allowed) {
         return bad(res, `Too many codes requested. Try again in ${rate.retryAfterMinutes} minutes.`, 429);
       }
 
-      const { code, expiresInMinutes } = await issueCode(user.id);
+      const { code, expiresInMinutes } = await issueCode(user_.id);
 
       const mail = await sendCodeEmail({
-        to: user.email,
-        name: user.name,
+        to: user_.email,
+        name: user_.name,
         code,
-        firmName: user.firm_name,
+        firmName: user_.firm_name,
         minutes: expiresInMinutes,
       });
 
       // Always available in the function log, so sign-in is recoverable even
       // when the mail provider is down.
       if (!mail.sent) {
-        console.log(`[auth] sign-in code for ${user.email}: ${code} (email not sent: ${mail.reason})`);
+        console.log(`[auth] sign-in code for ${user_.email}: ${code} (email not sent: ${mail.reason})`);
       }
 
       return ok(res, {
@@ -135,6 +180,9 @@ export default async function handler(req, res) {
 
       return ok(res, {
         signedIn: true,
+        // Said out loud in the app, because a demonstration that looks like a live
+        // system is a demonstration somebody mistakes for one.
+        openSignIn: OPEN_SIGNIN,
         user: { id: u.id, name: u.name, email: u.email, role: u.role },
         firm: { id: u.firm_id, name: u.firm_name, branding: u.branding || {} },
       });
