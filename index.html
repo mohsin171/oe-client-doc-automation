@@ -40,7 +40,12 @@
 
     <!-- The firm's own mark. The wordmark is unreadable at sixteen pixels, so the tab
          gets the orca alone and the share card gets the whole logo. -->
-    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-v2.png" />
+    <!-- Transparent, so the mark adopts whatever the browser puts behind it. A navy
+         square of its own reads as a sticker in a light themed browser, and the tab bar
+         is not ours to paint. Checked against a dark bar, a light one and white.
+         The touch icon keeps a background, because iOS composites onto white and a
+         transparent mark on a white home screen loses its edges. -->
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-v3.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon-v2.png" />
 
     <!-- The fonts were blocking the first paint, so the page stayed blank while two
